@@ -25,6 +25,11 @@ from aiohttp.web import Request, Response
 from .resource import ResourceManager
 from .core import NoteManager
 from .html import MAIN_PAGE, STATUS_PAGE, ERROR_PAGE_TEMPLATE, NOT_FOUND_PAGE
+from .static_utils import (
+    read_static_file,
+    read_static_file_bytes,
+    get_static_file_mime_type,
+)
 
 
 class NotepyOnlineServer:
@@ -55,6 +60,9 @@ class NotepyOnlineServer:
         self.app.router.add_get("/api/tags", self.get_tags)
         self.app.router.add_post("/api/notes/{note_id}/tags", self.add_tag)
         self.app.router.add_delete("/api/notes/{note_id}/tags/{tag}", self.remove_tag)
+
+        # Static file routes
+        self.app.router.add_get("/static/{path:.*}", self.serve_static)
 
         # Web interface routes
         self.app.router.add_get("/", self.index)
@@ -190,6 +198,26 @@ class NotepyOnlineServer:
             return web.json_response(note.to_dict())
         except Exception as e:
             return web.json_response({"error": str(e)}, status=500)
+
+    async def serve_static(self, request: Request) -> Response:
+        """Serve static files from the package."""
+        try:
+            path = request.match_info["path"]
+
+            # Determine if we need to serve as text or binary
+            if path.endswith((".css", ".js", ".html", ".txt", ".json")):
+                content = read_static_file(path)
+                content_type = get_static_file_mime_type(path)
+                return web.Response(text=content, content_type=content_type)
+            else:
+                content = read_static_file_bytes(path)
+                content_type = get_static_file_mime_type(path)
+                return web.Response(body=content, content_type=content_type)
+
+        except FileNotFoundError:
+            return web.Response(text="Static file not found", status=404)
+        except Exception as e:
+            return web.Response(text=f"Error serving static file: {str(e)}", status=500)
 
     async def start(
         self, cert_file: Path | None = None, key_file: Path | None = None
