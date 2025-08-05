@@ -647,3 +647,523 @@ class TestCLIErrorHandling:
 
         assert result.exit_code != 0
         assert "Server failed to start" in result.output
+
+    @patch("notepy_online.cli.ResourceManager")
+    def test_bootstrap_init_command_success(
+        self, mock_resource_manager: MagicMock, cli_runner: CliRunner
+    ) -> None:
+        """Test bootstrap init command success."""
+        mock_resource_mgr = MagicMock()
+        mock_resource_manager.return_value = mock_resource_mgr
+        mock_resource_mgr.get_default_config.return_value = {"test": "config"}
+
+        result = cli_runner.invoke(
+            cli,
+            [
+                "bootstrap",
+                "init",
+                "--days",
+                "730",
+                "--country",
+                "CA",
+                "--state",
+                "ON",
+                "--locality",
+                "Toronto",
+                "--organization",
+                "Test Org",
+                "--common-name",
+                "test.local",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert "Initializing Notepy Online resources" in result.output
+        assert "Creating directory structure" in result.output
+        assert "Creating default configuration" in result.output
+        assert "Generating SSL certificate" in result.output
+        assert "initialization completed successfully" in result.output
+
+        mock_resource_mgr.create_resource_structure.assert_called_once()
+        mock_resource_mgr.save_config.assert_called_once_with({"test": "config"})
+        mock_resource_mgr.generate_ssl_certificate.assert_called_once_with(
+            days_valid=730,
+            country="CA",
+            state="ON",
+            locality="Toronto",
+            organization="Test Org",
+            common_name="test.local",
+        )
+
+    @patch("notepy_online.cli.ResourceManager")
+    def test_bootstrap_init_command_error(
+        self, mock_resource_manager: MagicMock, cli_runner: CliRunner
+    ) -> None:
+        """Test bootstrap init command error handling."""
+        mock_resource_manager.side_effect = Exception("Init failed")
+
+        result = cli_runner.invoke(cli, ["bootstrap", "init"])
+
+        assert result.exit_code != 0
+        assert "Initialization failed" in result.output
+
+    @patch("notepy_online.cli.ResourceManager")
+    def test_bootstrap_check_command_success(
+        self, mock_resource_manager: MagicMock, cli_runner: CliRunner
+    ) -> None:
+        """Test bootstrap check command success."""
+        mock_resource_mgr = MagicMock()
+        mock_resource_manager.return_value = mock_resource_mgr
+        mock_resource_mgr.check_resource_structure.return_value = {
+            "resource_dir_path": "/test/path",
+            "config_file": True,
+            "notes_file": True,
+            "ssl_dir": True,
+        }
+        mock_resource_mgr.check_ssl_certificate.return_value = {
+            "exists": True,
+            "valid": True,
+            "expires": "2025-01-01",
+            "days_remaining": 365,
+        }
+
+        result = cli_runner.invoke(cli, ["bootstrap", "check"])
+
+        assert result.exit_code == 0
+        assert "Checking Notepy Online resources" in result.output
+        assert "Resource Directory: /test/path" in result.output
+        assert "Config File: ✅" in result.output
+        assert "Notes File: ✅" in result.output
+        assert "Ssl Dir: ✅" in result.output
+        assert "Expires: 2025-01-01" in result.output
+        assert "Days Remaining: 365" in result.output
+
+    @patch("notepy_online.cli.ResourceManager")
+    def test_bootstrap_check_command_error(
+        self, mock_resource_manager: MagicMock, cli_runner: CliRunner
+    ) -> None:
+        """Test bootstrap check command error handling."""
+        mock_resource_manager.side_effect = Exception("Check failed")
+
+        result = cli_runner.invoke(cli, ["bootstrap", "check"])
+
+        assert result.exit_code != 0
+        assert "Resource check failed" in result.output
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_search_command_success(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+    ) -> None:
+        """Test search command success."""
+        mock_note = MagicMock()
+        mock_note.note_id = "search-1"
+        mock_note.title = "Searchable Note"
+        mock_note.tags = ["search", "test"]
+        mock_note.updated_at.strftime.return_value = "2024-01-01 00:00:00"
+        mock_note_manager.return_value.list_notes.return_value = [mock_note]
+
+        result = cli_runner.invoke(cli, ["notes", "search", "searchable"])
+
+        assert result.exit_code == 0
+        assert "Found 1 note(s) matching 'searchable'" in result.output
+        assert "search-1" in result.output
+        assert "Searchable Note" in result.output
+        assert "search, test" in result.output
+        mock_note_manager.return_value.list_notes.assert_called_once_with(
+            search_query="searchable"
+        )
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_search_command_no_results(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+    ) -> None:
+        """Test search command with no results."""
+        mock_note_manager.return_value.list_notes.return_value = []
+
+        result = cli_runner.invoke(cli, ["notes", "search", "nonexistent"])
+
+        assert result.exit_code == 0
+        assert "No notes found matching 'nonexistent'" in result.output
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_search_command_with_output_file(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+        temp_dir: Path,
+    ) -> None:
+        """Test search command with output file."""
+        mock_note = MagicMock()
+        mock_note.to_dict.return_value = {
+            "note_id": "search-1",
+            "title": "Searchable Note",
+            "content": "Content",
+            "tags": ["search"],
+            "created_at": "2024-01-01T00:00:00+00:00",
+            "updated_at": "2024-01-01T00:00:00+00:00",
+        }
+        mock_note_manager.return_value.list_notes.return_value = [mock_note]
+
+        output_file = temp_dir / "search_results.json"
+        result = cli_runner.invoke(
+            cli, ["notes", "search", "searchable", "--output", str(output_file)]
+        )
+
+        assert result.exit_code == 0
+        assert "Search results exported to" in result.output
+        assert output_file.exists()
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_search_command_error(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+    ) -> None:
+        """Test search command error handling."""
+        mock_note_manager.return_value.list_notes.side_effect = Exception(
+            "Search failed"
+        )
+
+        result = cli_runner.invoke(cli, ["notes", "search", "test"])
+
+        assert result.exit_code != 0
+        assert "Failed to search notes" in result.output
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_export_command_error(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+        temp_dir: Path,
+    ) -> None:
+        """Test export command error handling."""
+        mock_note_manager.return_value.export_notes.side_effect = Exception(
+            "Export failed"
+        )
+
+        export_file = temp_dir / "export.json"
+        result = cli_runner.invoke(cli, ["notes", "export", str(export_file)])
+
+        assert result.exit_code != 0
+        assert "Failed to export notes" in result.output
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_import_command_error(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+        temp_dir: Path,
+    ) -> None:
+        """Test import command error handling."""
+        mock_note_manager.return_value.import_notes.side_effect = Exception(
+            "Import failed"
+        )
+
+        import_file = temp_dir / "import.json"
+        import_file.write_text('{"test": "data"}')
+        result = cli_runner.invoke(cli, ["notes", "import-notes", str(import_file)])
+
+        assert result.exit_code != 0
+        assert "Failed to import notes" in result.output
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_tags_add_command_success(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+    ) -> None:
+        """Test tags add command success."""
+        mock_note = MagicMock()
+        mock_note.title = "Test Note"
+        mock_note_manager.return_value.get_note.return_value = mock_note
+
+        result = cli_runner.invoke(cli, ["tags", "add", "test-id", "new-tag"])
+
+        assert result.exit_code == 0
+        assert "Tag 'new-tag' added to note 'Test Note'" in result.output
+        mock_note.add_tag.assert_called_once_with("new-tag")
+        mock_note_manager.return_value._save_notes.assert_called_once()
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_tags_add_command_note_not_found(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+    ) -> None:
+        """Test tags add command with non-existent note."""
+        mock_note_manager.return_value.get_note.return_value = None
+
+        result = cli_runner.invoke(cli, ["tags", "add", "nonexistent-id", "new-tag"])
+
+        assert result.exit_code != 0
+        assert "not found" in result.output
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_tags_add_command_error(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+    ) -> None:
+        """Test tags add command error handling."""
+        mock_note = MagicMock()
+        mock_note.title = "Test Note"
+        mock_note_manager.return_value.get_note.return_value = mock_note
+        mock_note.add_tag.side_effect = Exception("Add tag failed")
+
+        result = cli_runner.invoke(cli, ["tags", "add", "test-id", "new-tag"])
+
+        assert result.exit_code != 0
+        assert "Failed to add tag" in result.output
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_tags_remove_command_success(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+    ) -> None:
+        """Test tags remove command success."""
+        mock_note = MagicMock()
+        mock_note.title = "Test Note"
+        mock_note_manager.return_value.get_note.return_value = mock_note
+
+        result = cli_runner.invoke(cli, ["tags", "remove", "test-id", "old-tag"])
+
+        assert result.exit_code == 0
+        assert "Tag 'old-tag' removed from note 'Test Note'" in result.output
+        mock_note.remove_tag.assert_called_once_with("old-tag")
+        mock_note_manager.return_value._save_notes.assert_called_once()
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_tags_remove_command_note_not_found(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+    ) -> None:
+        """Test tags remove command with non-existent note."""
+        mock_note_manager.return_value.get_note.return_value = None
+
+        result = cli_runner.invoke(cli, ["tags", "remove", "nonexistent-id", "old-tag"])
+
+        assert result.exit_code != 0
+        assert "not found" in result.output
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_tags_remove_command_error(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+    ) -> None:
+        """Test tags remove command error handling."""
+        mock_note = MagicMock()
+        mock_note.title = "Test Note"
+        mock_note_manager.return_value.get_note.return_value = mock_note
+        mock_note.remove_tag.side_effect = Exception("Remove tag failed")
+
+        result = cli_runner.invoke(cli, ["tags", "remove", "test-id", "old-tag"])
+
+        assert result.exit_code != 0
+        assert "Failed to remove tag" in result.output
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_delete_note_command_with_confirmation(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+    ) -> None:
+        """Test delete note command with confirmation."""
+        mock_note = MagicMock()
+        mock_note.title = "Test Note"
+        mock_note_manager.return_value.get_note.return_value = mock_note
+        mock_note_manager.return_value.delete_note.return_value = True
+
+        # Mock click.confirm to return False (user cancels)
+        with patch("click.confirm", return_value=False):
+            result = cli_runner.invoke(cli, ["notes", "delete", "test-id"])
+
+        assert result.exit_code == 0
+        assert "Deletion cancelled" in result.output
+        mock_note_manager.return_value.delete_note.assert_not_called()
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_delete_note_command_delete_failed(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+    ) -> None:
+        """Test delete note command when deletion fails."""
+        mock_note = MagicMock()
+        mock_note.title = "Test Note"
+        mock_note_manager.return_value.get_note.return_value = mock_note
+        mock_note_manager.return_value.delete_note.return_value = False
+
+        result = cli_runner.invoke(cli, ["notes", "delete", "test-id", "--force"])
+
+        assert result.exit_code == 0
+        assert "Failed to delete note" in result.output
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_delete_note_command_error(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+    ) -> None:
+        """Test delete note command error handling."""
+        mock_note_manager.return_value.get_note.side_effect = Exception("Delete failed")
+
+        result = cli_runner.invoke(cli, ["notes", "delete", "test-id"])
+
+        assert result.exit_code != 0
+        assert "Failed to delete note" in result.output
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_list_notes_command_with_output_file(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+        temp_dir: Path,
+    ) -> None:
+        """Test list notes command with output file."""
+        mock_note = MagicMock()
+        mock_note.to_dict.return_value = {
+            "note_id": "test-id",
+            "title": "Test Note",
+            "content": "Test content",
+            "tags": ["test"],
+            "created_at": "2024-01-01T00:00:00+00:00",
+            "updated_at": "2024-01-01T00:00:00+00:00",
+        }
+        mock_note_manager.return_value.list_notes.return_value = [mock_note]
+
+        output_file = temp_dir / "notes.json"
+        result = cli_runner.invoke(
+            cli, ["notes", "list-notes", "--output", str(output_file), "--pretty"]
+        )
+
+        assert result.exit_code == 0
+        assert "Notes exported to" in result.output
+        assert output_file.exists()
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_show_note_command_with_output_file(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+        temp_dir: Path,
+    ) -> None:
+        """Test show note command with output file."""
+        mock_note = MagicMock()
+        mock_note.to_dict.return_value = {
+            "note_id": "test-id",
+            "title": "Test Note",
+            "content": "Test content",
+            "tags": ["test"],
+            "created_at": "2024-01-01T00:00:00+00:00",
+            "updated_at": "2024-01-01T00:00:00+00:00",
+        }
+        mock_note_manager.return_value.get_note.return_value = mock_note
+
+        output_file = temp_dir / "note.json"
+        result = cli_runner.invoke(
+            cli, ["notes", "show", "test-id", "--output", str(output_file), "--pretty"]
+        )
+
+        assert result.exit_code == 0
+        assert "Note exported to" in result.output
+        assert output_file.exists()
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_edit_note_command_error(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+    ) -> None:
+        """Test edit note command error handling."""
+        mock_note_manager.return_value.update_note.side_effect = Exception(
+            "Update failed"
+        )
+
+        result = cli_runner.invoke(
+            cli, ["notes", "edit", "test-id", "--title", "New Title"]
+        )
+
+        assert result.exit_code != 0
+        assert "Failed to edit note" in result.output
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_create_note_command_error(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+    ) -> None:
+        """Test create note command error handling."""
+        mock_note_manager.return_value.create_note.side_effect = Exception(
+            "Create failed"
+        )
+
+        result = cli_runner.invoke(
+            cli,
+            ["notes", "create", "--title", "Test Note", "--content", "Test content"],
+        )
+
+        assert result.exit_code != 0
+        assert "Failed to create note" in result.output
+
+    @patch("notepy_online.cli.NoteManager")
+    @patch("notepy_online.cli.ResourceManager")
+    def test_list_tags_command_error(
+        self,
+        mock_resource_manager: MagicMock,
+        mock_note_manager: MagicMock,
+        cli_runner: CliRunner,
+    ) -> None:
+        """Test list tags command error handling."""
+        mock_note_manager.return_value.get_all_tags.side_effect = Exception(
+            "List tags failed"
+        )
+
+        result = cli_runner.invoke(cli, ["tags", "list-tags"])
+
+        assert result.exit_code != 0
+        assert "Failed to list tags" in result.output
