@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import pytest_asyncio
 from aiohttp import web
-from aiohttp.test_utils import TestClient
+from aiohttp.test_utils import TestClient, TestServer
 
 from notepy_online.server import NotepyOnlineServer
 
@@ -40,7 +40,14 @@ class TestNotepyOnlineServer:
 
         # Check that all expected routes are registered
         routes = list(server.app.router.routes())
-        route_paths = [route.resource.canonical for route in routes]
+        route_paths = []
+        for route in routes:
+            if hasattr(route.resource, "canonical"):
+                route_paths.append(str(route.resource.canonical))
+            elif hasattr(route.resource, "path"):
+                route_paths.append(str(route.resource.path))
+            else:
+                route_paths.append(str(route.resource))
 
         expected_paths = [
             "/api/notes",
@@ -48,13 +55,13 @@ class TestNotepyOnlineServer:
             "/api/tags",
             "/api/notes/{note_id}/tags",
             "/api/notes/{note_id}/tags/{tag}",
-            "/static/{path:.*}",
+            "/static/{path}",
             "/",
             "/status",
         ]
 
         for expected_path in expected_paths:
-            assert any(expected_path in str(route_path) for route_path in route_paths)
+            assert any(expected_path in route_path for route_path in route_paths)
 
     def test_get_index_html(self) -> None:
         """Test the index HTML generation."""
@@ -82,7 +89,8 @@ class TestNotepyOnlineServer:
     @pytest_asyncio.fixture
     async def test_client(self, test_server: NotepyOnlineServer) -> TestClient:
         """Create a test client for the server."""
-        async with TestClient(test_server.app) as client:
+        test_server_instance = TestServer(test_server.app)
+        async with TestClient(test_server_instance) as client:
             yield client
 
     async def test_index_endpoint(self, test_client: TestClient) -> None:
@@ -285,18 +293,16 @@ class TestNotepyOnlineServer:
 class TestRunServerFunction:
     """Test cases for the run_server function."""
 
-    @patch("notepy_online.server.run_server")
-    async def test_run_server_default_params(self, mock_run_server: MagicMock) -> None:
+    @patch("notepy_online.server.NotepyOnlineServer.start")
+    async def test_run_server_default_params(self, mock_start: MagicMock) -> None:
         """Test run_server with default parameters."""
-        mock_run_server.return_value = AsyncMock()
+        mock_start.return_value = AsyncMock()
 
         from notepy_online.server import run_server
 
         await run_server()
 
-        mock_run_server.assert_called_once_with(
-            host="localhost", port=8443, cert_file=None, key_file=None
-        )
+        mock_start.assert_called_once_with(cert_file=None, key_file=None)
 
     @patch("notepy_online.server.run_server")
     async def test_run_server_custom_params(self, mock_run_server: MagicMock) -> None:
@@ -325,7 +331,8 @@ class TestServerErrorHandling:
     async def test_client(self) -> TestClient:
         """Create a test client for error testing."""
         server = NotepyOnlineServer(host="localhost", port=0)
-        async with TestClient(server.app) as client:
+        test_server_instance = TestServer(server.app)
+        async with TestClient(test_server_instance) as client:
             yield client
 
     async def test_notes_api_error_handling(self, test_client: TestClient) -> None:
@@ -368,10 +375,31 @@ class TestServerPerformance:
     """Test cases for server performance and concurrency."""
 
     @pytest_asyncio.fixture
-    async def test_client(self) -> TestClient:
+    async def test_client(self, temp_dir: Path) -> TestClient:
         """Create a test client for performance testing."""
         server = NotepyOnlineServer(host="localhost", port=0)
-        async with TestClient(server.app) as client:
+
+        # Patch the resource manager to use temp directory for isolation
+        server.resource_mgr.resource_dir = temp_dir
+        server.resource_mgr.config_file = temp_dir / "config.toml"
+        server.resource_mgr.ssl_dir = temp_dir / "ssl"
+        server.resource_mgr.ssl_cert_file = temp_dir / "ssl" / "server.crt"
+        server.resource_mgr.ssl_key_file = temp_dir / "ssl" / "server.key"
+        server.resource_mgr.notes_dir = temp_dir / "notes"
+        server.resource_mgr.logs_dir = temp_dir / "logs"
+
+        # Create necessary directories
+        server.resource_mgr.notes_dir.mkdir(parents=True, exist_ok=True)
+        server.resource_mgr.ssl_dir.mkdir(parents=True, exist_ok=True)
+        server.resource_mgr.logs_dir.mkdir(parents=True, exist_ok=True)
+
+        # Reinitialize note manager with new resource manager
+        from notepy_online.core import NoteManager
+
+        server.note_mgr = NoteManager(server.resource_mgr)
+
+        test_server_instance = TestServer(server.app)
+        async with TestClient(test_server_instance) as client:
             yield client
 
     async def test_concurrent_note_creation(self, test_client: TestClient) -> None:

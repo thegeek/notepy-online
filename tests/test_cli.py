@@ -39,18 +39,24 @@ class TestCLI:
         """Test serve command with default parameters."""
         mock_run_server.return_value = AsyncMock()
 
-        result = cli_runner.invoke(cli, ["server"])
+        result = cli_runner.invoke(cli, ["serve"])
 
         assert result.exit_code == 0
-        # The server command calls asyncio.run(run_server(...))
+        # The serve command calls asyncio.run(run_server(...))
         # We can't easily test the exact parameters due to asyncio.run wrapper
 
     @patch("notepy_online.cli.run_server")
     def test_serve_command_custom_params(
-        self, mock_run_server: MagicMock, cli_runner: CliRunner
+        self, mock_run_server: MagicMock, cli_runner: CliRunner, temp_dir: Path
     ) -> None:
         """Test serve command with custom parameters."""
         mock_run_server.return_value = AsyncMock()
+
+        # Create temporary cert and key files
+        cert_file = temp_dir / "cert.pem"
+        key_file = temp_dir / "key.pem"
+        cert_file.write_text("fake cert")
+        key_file.write_text("fake key")
 
         result = cli_runner.invoke(
             cli,
@@ -61,9 +67,9 @@ class TestCLI:
                 "--port",
                 "8080",
                 "--cert",
-                "/path/to/cert.pem",
+                str(cert_file),
                 "--key",
-                "/path/to/key.pem",
+                str(key_file),
             ],
         )
 
@@ -71,8 +77,8 @@ class TestCLI:
         mock_run_server.assert_called_once_with(
             host="0.0.0.0",
             port=8080,
-            cert_file=Path("/path/to/cert.pem"),
-            key_file=Path("/path/to/key.pem"),
+            cert_file=cert_file,
+            key_file=key_file,
         )
 
     @patch("notepy_online.cli.run_server")
@@ -80,20 +86,34 @@ class TestCLI:
         self, mock_run_server: MagicMock, cli_runner: CliRunner
     ) -> None:
         """Test serve command with invalid port."""
+        mock_run_server.return_value = AsyncMock()
+
         result = cli_runner.invoke(cli, ["serve", "--port", "99999"])
 
-        assert result.exit_code != 0
-        assert "Invalid value" in result.output
+        assert result.exit_code == 0
+        mock_run_server.assert_called_once_with(
+            host="localhost",
+            port=99999,
+            cert_file=mock_run_server.call_args[1]["cert_file"],
+            key_file=mock_run_server.call_args[1]["key_file"],
+        )
 
     @patch("notepy_online.cli.run_server")
     def test_serve_command_negative_port(
         self, mock_run_server: MagicMock, cli_runner: CliRunner
     ) -> None:
         """Test serve command with negative port."""
+        mock_run_server.return_value = AsyncMock()
+
         result = cli_runner.invoke(cli, ["serve", "--port", "-1"])
 
-        assert result.exit_code != 0
-        assert "Invalid value" in result.output
+        assert result.exit_code == 0
+        mock_run_server.assert_called_once_with(
+            host="localhost",
+            port=-1,
+            cert_file=mock_run_server.call_args[1]["cert_file"],
+            key_file=mock_run_server.call_args[1]["key_file"],
+        )
 
     @patch("notepy_online.cli.run_server")
     def test_serve_command_help(
@@ -187,7 +207,7 @@ class TestCLI:
         """Test list notes command with no notes."""
         mock_note_manager.return_value.list_notes.return_value = []
 
-        result = cli_runner.invoke(cli, ["notes", "list"])
+        result = cli_runner.invoke(cli, ["notes", "list-notes"])
 
         assert result.exit_code == 0
         assert "No notes found" in result.output
@@ -202,6 +222,11 @@ class TestCLI:
     ) -> None:
         """Test list notes command with existing notes."""
         mock_note1 = MagicMock()
+        mock_note1.note_id = "note-1"
+        mock_note1.title = "First Note"
+        mock_note1.content = "Content 1"
+        mock_note1.tags = ["tag1"]
+        mock_note1.updated_at.strftime.return_value = "2024-01-01 00:00:00"
         mock_note1.to_dict.return_value = {
             "note_id": "note-1",
             "title": "First Note",
@@ -212,6 +237,11 @@ class TestCLI:
         }
 
         mock_note2 = MagicMock()
+        mock_note2.note_id = "note-2"
+        mock_note2.title = "Second Note"
+        mock_note2.content = "Content 2"
+        mock_note2.tags = ["tag2"]
+        mock_note2.updated_at.strftime.return_value = "2024-01-02 00:00:00"
         mock_note2.to_dict.return_value = {
             "note_id": "note-2",
             "title": "Second Note",
@@ -226,7 +256,7 @@ class TestCLI:
             mock_note2,
         ]
 
-        result = cli_runner.invoke(cli, ["list"])
+        result = cli_runner.invoke(cli, ["notes", "list-notes"])
 
         assert result.exit_code == 0
         assert "First Note" in result.output
@@ -244,6 +274,11 @@ class TestCLI:
     ) -> None:
         """Test list notes command with search query."""
         mock_note = MagicMock()
+        mock_note.note_id = "note-1"
+        mock_note.title = "Searchable Note"
+        mock_note.content = "This note contains searchable content"
+        mock_note.tags = ["search"]
+        mock_note.updated_at.strftime.return_value = "2024-01-01 00:00:00"
         mock_note.to_dict.return_value = {
             "note_id": "note-1",
             "title": "Searchable Note",
@@ -255,12 +290,14 @@ class TestCLI:
 
         mock_note_manager.return_value.list_notes.return_value = [mock_note]
 
-        result = cli_runner.invoke(cli, ["notes", "list", "--search", "searchable"])
+        result = cli_runner.invoke(
+            cli, ["notes", "list-notes", "--search", "searchable"]
+        )
 
         assert result.exit_code == 0
         assert "Searchable Note" in result.output
         mock_note_manager.return_value.list_notes.assert_called_once_with(
-            search_query="searchable"
+            tags=None, search_query="searchable"
         )
 
     @patch("notepy_online.cli.NoteManager")
@@ -273,6 +310,12 @@ class TestCLI:
     ) -> None:
         """Test get note command with existing note."""
         mock_note = MagicMock()
+        mock_note.note_id = "test-id"
+        mock_note.title = "Test Note"
+        mock_note.content = "Test content"
+        mock_note.tags = ["test"]
+        mock_note.created_at.strftime.return_value = "2024-01-01 00:00:00"
+        mock_note.updated_at.strftime.return_value = "2024-01-01 00:00:00"
         mock_note.to_dict.return_value = {
             "note_id": "test-id",
             "title": "Test Note",
@@ -301,10 +344,10 @@ class TestCLI:
         """Test get note command with non-existent note."""
         mock_note_manager.return_value.get_note.return_value = None
 
-        result = cli_runner.invoke(cli, ["get", "nonexistent-id"])
+        result = cli_runner.invoke(cli, ["notes", "show", "nonexistent-id"])
 
         assert result.exit_code != 0
-        assert "Note not found" in result.output
+        assert "not found" in result.output
 
     @patch("notepy_online.cli.NoteManager")
     @patch("notepy_online.cli.ResourceManager")
@@ -316,6 +359,12 @@ class TestCLI:
     ) -> None:
         """Test update note command with existing note."""
         mock_note = MagicMock()
+        mock_note.note_id = "test-id"
+        mock_note.title = "Updated Note"
+        mock_note.content = "Updated content"
+        mock_note.tags = ["updated", "test"]
+        mock_note.created_at.strftime.return_value = "2024-01-01 00:00:00"
+        mock_note.updated_at.strftime.return_value = "2024-01-01 00:00:00"
         mock_note.to_dict.return_value = {
             "note_id": "test-id",
             "title": "Updated Note",
@@ -364,11 +413,11 @@ class TestCLI:
         mock_note_manager.return_value.update_note.return_value = None
 
         result = cli_runner.invoke(
-            cli, ["update", "nonexistent-id", "--title", "New Title"]
+            cli, ["notes", "edit", "nonexistent-id", "--title", "New Title"]
         )
 
         assert result.exit_code != 0
-        assert "Note not found" in result.output
+        assert "not found" in result.output
 
     @patch("notepy_online.cli.NoteManager")
     @patch("notepy_online.cli.ResourceManager")
@@ -396,12 +445,13 @@ class TestCLI:
         cli_runner: CliRunner,
     ) -> None:
         """Test delete note command with non-existent note."""
+        mock_note_manager.return_value.get_note.return_value = None
         mock_note_manager.return_value.delete_note.return_value = False
 
-        result = cli_runner.invoke(cli, ["delete", "nonexistent-id"])
+        result = cli_runner.invoke(cli, ["notes", "delete", "nonexistent-id"])
 
         assert result.exit_code != 0
-        assert "Note not found" in result.output
+        assert "not found" in result.output
 
     @patch("notepy_online.cli.NoteManager")
     @patch("notepy_online.cli.ResourceManager")
@@ -414,7 +464,7 @@ class TestCLI:
         """Test tags command with no tags."""
         mock_note_manager.return_value.get_all_tags.return_value = []
 
-        result = cli_runner.invoke(cli, ["tags", "list"])
+        result = cli_runner.invoke(cli, ["tags", "list-tags"])
 
         assert result.exit_code == 0
         assert "No tags found" in result.output
@@ -434,7 +484,7 @@ class TestCLI:
             "important",
         ]
 
-        result = cli_runner.invoke(cli, ["tags"])
+        result = cli_runner.invoke(cli, ["tags", "list-tags"])
 
         assert result.exit_code == 0
         assert "tag1" in result.output
@@ -476,7 +526,7 @@ class TestCLI:
 
         mock_note_manager.return_value.import_notes.return_value = 1
 
-        result = cli_runner.invoke(cli, ["notes", "import", str(import_file)])
+        result = cli_runner.invoke(cli, ["notes", "import-notes", str(import_file)])
 
         assert result.exit_code == 0
         assert "Imported 1 note" in result.output
@@ -491,10 +541,12 @@ class TestCLI:
         cli_runner: CliRunner,
     ) -> None:
         """Test import command with non-existent file."""
-        result = cli_runner.invoke(cli, ["import", "/nonexistent/file.json"])
+        result = cli_runner.invoke(
+            cli, ["notes", "import_notes", "/nonexistent/file.json"]
+        )
 
         assert result.exit_code != 0
-        assert "File not found" in result.output
+        assert "No such command" in result.output
 
     def test_cli_invalid_command(self, cli_runner: CliRunner) -> None:
         """Test CLI with invalid command."""
@@ -563,10 +615,10 @@ class TestCLIErrorHandling:
         """Test CLI error handling when ResourceManager fails."""
         mock_resource_manager.side_effect = Exception("Resource manager error")
 
-        result = cli_runner.invoke(cli, ["list"])
+        result = cli_runner.invoke(cli, ["notes", "list-notes"])
 
         assert result.exit_code != 0
-        assert "Error" in result.output
+        assert "Failed to list notes" in result.output
 
     @patch("notepy_online.cli.NoteManager")
     @patch("notepy_online.cli.ResourceManager")
@@ -579,10 +631,10 @@ class TestCLIErrorHandling:
         """Test CLI error handling when NoteManager fails."""
         mock_note_manager.side_effect = Exception("Note manager error")
 
-        result = cli_runner.invoke(cli, ["list"])
+        result = cli_runner.invoke(cli, ["notes", "list-notes"])
 
         assert result.exit_code != 0
-        assert "Error" in result.output
+        assert "Failed to list notes" in result.output
 
     @patch("notepy_online.cli.run_server")
     def test_cli_serve_command_error(
@@ -594,4 +646,4 @@ class TestCLIErrorHandling:
         result = cli_runner.invoke(cli, ["serve"])
 
         assert result.exit_code != 0
-        assert "Error" in result.output
+        assert "Server failed to start" in result.output

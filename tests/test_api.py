@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 import pytest_asyncio
 from aiohttp import web
-from aiohttp.test_utils import TestClient
+from aiohttp.test_utils import TestClient, TestServer
 
 from notepy_online.server import NotepyOnlineServer
 
@@ -16,11 +16,9 @@ class TestNotesAPI:
     """Test cases for the notes API endpoints."""
 
     @pytest_asyncio.fixture
-    async def api_client(self) -> TestClient:
+    async def api_client(self, api_client) -> TestClient:
         """Create a test client for API testing."""
-        server = NotepyOnlineServer(host="localhost", port=0)
-        async with TestClient(server.app) as client:
-            yield client
+        yield api_client
 
     async def test_get_notes_empty(self, api_client: TestClient) -> None:
         """Test getting notes when none exist."""
@@ -221,11 +219,9 @@ class TestTagsAPI:
     """Test cases for the tags API endpoints."""
 
     @pytest_asyncio.fixture
-    async def api_client(self) -> TestClient:
+    async def api_client(self, api_client) -> TestClient:
         """Create a test client for API testing."""
-        server = NotepyOnlineServer(host="localhost", port=0)
-        async with TestClient(server.app) as client:
-            yield client
+        yield api_client
 
     async def test_get_tags_empty(self, api_client: TestClient) -> None:
         """Test getting tags when no notes exist."""
@@ -368,11 +364,9 @@ class TestWebInterfaceAPI:
     """Test cases for the web interface endpoints."""
 
     @pytest_asyncio.fixture
-    async def api_client(self) -> TestClient:
+    async def api_client(self, api_client) -> TestClient:
         """Create a test client for API testing."""
-        server = NotepyOnlineServer(host="localhost", port=0)
-        async with TestClient(server.app) as client:
-            yield client
+        yield api_client
 
     async def test_index_page(self, api_client: TestClient) -> None:
         """Test the main index page."""
@@ -398,11 +392,9 @@ class TestStaticFilesAPI:
     """Test cases for static file serving."""
 
     @pytest_asyncio.fixture
-    async def api_client(self) -> TestClient:
+    async def api_client(self, api_client) -> TestClient:
         """Create a test client for API testing."""
-        server = NotepyOnlineServer(host="localhost", port=0)
-        async with TestClient(server.app) as client:
-            yield client
+        yield api_client
 
     async def test_serve_css_file(self, api_client: TestClient) -> None:
         """Test serving CSS files."""
@@ -436,11 +428,9 @@ class TestErrorHandling:
     """Test cases for error handling in the API."""
 
     @pytest_asyncio.fixture
-    async def api_client(self) -> TestClient:
+    async def api_client(self, api_client) -> TestClient:
         """Create a test client for API testing."""
-        server = NotepyOnlineServer(host="localhost", port=0)
-        async with TestClient(server.app) as client:
-            yield client
+        yield api_client
 
     async def test_invalid_json_in_create(self, api_client: TestClient) -> None:
         """Test handling invalid JSON in note creation."""
@@ -513,11 +503,9 @@ class TestAPIIntegration:
     """Integration tests for the complete API workflow."""
 
     @pytest_asyncio.fixture
-    async def api_client(self) -> TestClient:
+    async def api_client(self, api_client) -> TestClient:
         """Create a test client for API testing."""
-        server = NotepyOnlineServer(host="localhost", port=0)
-        async with TestClient(server.app) as client:
-            yield client
+        yield api_client
 
     async def test_complete_note_workflow(self, api_client: TestClient) -> None:
         """Test a complete note workflow: create, read, update, delete."""
@@ -611,7 +599,7 @@ class TestAPIIntegration:
         assert tags_response.status == 200
         tags_data = await tags_response.json()
         expected_tags = ["fruit", "red", "yellow", "vehicle", "transport"]
-        assert sorted(tags_data["tags"]) == expected_tags
+        assert sorted(tags_data["tags"]) == sorted(expected_tags)
 
         # Clean up
         for note in created_notes:

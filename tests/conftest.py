@@ -117,9 +117,30 @@ async def test_client(
 
 
 @pytest_asyncio.fixture
-async def api_client() -> AsyncGenerator[TestClient, None]:
+async def api_client(temp_dir: Path) -> AsyncGenerator[TestClient, None]:
     """Create a test client for API testing."""
+    # Create a server with isolated resource manager
     server = NotepyOnlineServer(host="localhost", port=0)
+
+    # Patch the resource manager to use temp directory
+    server.resource_mgr.resource_dir = temp_dir
+    server.resource_mgr.config_file = temp_dir / "config.toml"
+    server.resource_mgr.ssl_dir = temp_dir / "ssl"
+    server.resource_mgr.ssl_cert_file = temp_dir / "ssl" / "server.crt"
+    server.resource_mgr.ssl_key_file = temp_dir / "ssl" / "server.key"
+    server.resource_mgr.notes_dir = temp_dir / "notes"
+    server.resource_mgr.logs_dir = temp_dir / "logs"
+
+    # Create necessary directories
+    server.resource_mgr.notes_dir.mkdir(parents=True, exist_ok=True)
+    server.resource_mgr.ssl_dir.mkdir(parents=True, exist_ok=True)
+    server.resource_mgr.logs_dir.mkdir(parents=True, exist_ok=True)
+
+    # Reinitialize note manager with new resource manager
+    from notepy_online.core import NoteManager
+
+    server.note_mgr = NoteManager(server.resource_mgr)
+
     from aiohttp.test_utils import TestServer
 
     test_server_instance = TestServer(server.app)

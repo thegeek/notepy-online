@@ -493,7 +493,7 @@ def remove(note_id: str, tag: str) -> None:
     type=click.Path(exists=True, path_type=Path),
     help="Path to SSL private key file for HTTPS",
 )
-def server(host: str, port: int, cert: Path | None, key: Path | None) -> None:
+def serve(host: str, port: int, cert: Path | None, key: Path | None) -> None:
     """Start the Notepy Online web server."""
     try:
         click.echo(f"🚀 Starting Notepy Online server on {host}:{port}")
