@@ -15,3 +15,11 @@ wheels/
 # VSCode
 .vscode/
 *.code-workspace
+
+# pytest
+.pytest_cache/
+
+# Coverage
+coverage.xml
+htmlcov/
+.coverage
