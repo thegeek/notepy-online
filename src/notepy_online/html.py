@@ -371,8 +371,56 @@ MAIN_PAGE = f"""
                 <button class="toggle-btn" onclick="toggleSidebar()">×</button>
             </div>
             
-            <div class="search-container">
-                <input type="text" class="search-input" id="searchInput" placeholder="Search notes...">
+            <!-- Enhanced Search Section -->
+            <div class="search-section">
+                <div class="search-container">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search notes..." onfocus="showSearchHistory()">
+                    <button class="search-btn" onclick="toggleAdvancedSearch()">🔍</button>
+                    <button class="search-history-btn" onclick="showSearchHistory()" title="Search History">📋</button>
+                </div>
+                
+                <!-- Advanced Search Panel -->
+                <div class="advanced-search" id="advancedSearch" style="display: none;">
+                    <div class="search-filters">
+                        <div class="filter-group">
+                            <label>Sort by:</label>
+                            <select id="sortBy" onchange="applyFilters()">
+                                <option value="updated_at">Last Modified</option>
+                                <option value="created_at">Created Date</option>
+                                <option value="title">Title</option>
+                                <option value="content_length">Content Length</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Order:</label>
+                            <select id="sortOrder" onchange="applyFilters()">
+                                <option value="desc">Newest First</option>
+                                <option value="asc">Oldest First</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Date Range:</label>
+                            <select id="dateFilter" onchange="applyFilters()">
+                                <option value="">All Time</option>
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="year">This Year</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tag Filter Section -->
+            <div class="tag-filter-section">
+                <div class="section-header">
+                    <span>🏷️ Tags</span>
+                    <button class="clear-filters" onclick="clearAllFilters()">Clear</button>
+                </div>
+                <div class="tag-filters" id="tagFilters">
+                    <!-- Tags will be populated here -->
+                </div>
             </div>
             
             <div class="notes-list" id="notesList">
@@ -385,10 +433,32 @@ MAIN_PAGE = f"""
         
         <div class="main-content">
             <div class="editor-header">
-                <div class="editor-title" id="editorTitle">Select a note or create a new one</div>
+                <div class="editor-info">
+                    <div class="editor-title" id="editorTitle">Select a note or create a new one</div>
+                    <div class="editor-meta" id="editorMeta">
+                        <span class="word-count" id="wordCount">0 words</span>
+                        <span class="char-count" id="charCount">0 characters</span>
+                        <span class="last-saved" id="lastSaved"></span>
+                    </div>
+                </div>
                 <div class="editor-actions">
-                    <button class="btn btn-secondary" onclick="window.location.href='/status'">📊 Status</button>
-                    <button class="btn" onclick="saveCurrentNote()" id="saveBtn">💾 Save</button>
+                    <button class="btn btn-secondary" onclick="toggleFullscreen()" id="fullscreenBtn" title="Toggle Fullscreen (Ctrl+Shift+F)">⛶</button>
+                    <button class="btn btn-secondary" onclick="showKeyboardShortcuts()" title="Keyboard Shortcuts (Ctrl+Shift+K)">⌨️</button>
+                    <button class="btn btn-secondary" onclick="showExportMenu()" title="Export Options">📤 Export</button>
+                    <button class="btn btn-secondary" onclick="showImportDialog()" title="Import Notes">📥 Import</button>
+                    <button class="btn btn-secondary" onclick="window.location.href='/status'" title="Go to Status (Ctrl+Shift+H)">📊 Status</button>
+                    <button class="btn" onclick="saveCurrentNote()" id="saveBtn" title="Save Note (Ctrl+S)">💾 Save</button>
+                </div>
+            </div>
+            
+            <!-- Tag Management Section -->
+            <div class="tag-management" id="tagManagement" style="display: none;">
+                <div class="tag-input-container">
+                    <input type="text" class="tag-input" id="tagInput" placeholder="Add tags...">
+                    <button class="add-tag-btn" onclick="addTagToNote()">+</button>
+                </div>
+                <div class="current-tags" id="currentTags">
+                    <!-- Current note tags will be displayed here -->
                 </div>
             </div>
             
@@ -400,6 +470,8 @@ MAIN_PAGE = f"""
     
     <div class="save-indicator" id="saveIndicator">Saved!</div>
     
+    <!-- Toast notifications -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <script src="/static/js/editor.js"></script>
 </body>

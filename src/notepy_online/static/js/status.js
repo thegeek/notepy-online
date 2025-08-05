@@ -78,29 +78,29 @@ function displayNotes(notes) {
         return;
     }
     
-    container.innerHTML = `
-        <div class="notes-grid">
-            ${notes.map(note => `
-                <div class="note-card" onclick="selectNote('${note.id}')">
-                    <div class="note-header">
-                        <div>
-                            <div class="note-title">${escapeHtml(note.title)}</div>
-                            <div class="note-date">${formatDate(note.created_at)}</div>
+            container.innerHTML = `
+            <div class="notes-grid">
+                ${notes.map(note => `
+                    <div class="note-card" onclick="selectNote('${note.note_id}')">
+                        <div class="note-header">
+                            <div>
+                                <div class="note-title">${escapeHtml(note.title)}</div>
+                                <div class="note-date">${formatDate(note.created_at)}</div>
+                            </div>
+                        </div>
+                        <div class="note-content">${escapeHtml(note.content.substring(0, 150))}${note.content.length > 150 ? '...' : ''}</div>
+                        <div class="note-tags">
+                            ${(note.tags || []).map(tag => `
+                                <span class="note-tag">${escapeHtml(tag)}</span>
+                            `).join('')}
+                        </div>
+                        <div class="note-actions">
+                            <button class="action-btn" onclick="deleteNote('${note.note_id}', event)">🗑️</button>
                         </div>
                     </div>
-                    <div class="note-content">${escapeHtml(note.content.substring(0, 150))}${note.content.length > 150 ? '...' : ''}</div>
-                    <div class="note-tags">
-                        ${(note.tags || []).map(tag => `
-                            <span class="note-tag">${escapeHtml(tag)}</span>
-                        `).join('')}
-                    </div>
-                    <div class="note-actions">
-                        <button class="action-btn" onclick="deleteNote('${note.id}', event)">🗑️</button>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `;
+                `).join('')}
+            </div>
+        `;
 }
 
 function displayPopularTags() {

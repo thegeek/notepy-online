@@ -15,6 +15,7 @@ Features:
 import asyncio
 import json
 import ssl
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -60,6 +61,11 @@ class NotepyOnlineServer:
         self.app.router.add_get("/api/tags", self.get_tags)
         self.app.router.add_post("/api/notes/{note_id}/tags", self.add_tag)
         self.app.router.add_delete("/api/notes/{note_id}/tags/{tag}", self.remove_tag)
+
+        # Export/Import routes
+        self.app.router.add_get("/api/export", self.export_notes)
+        self.app.router.add_post("/api/import", self.import_notes)
+        self.app.router.add_get("/api/notes/{note_id}/export", self.export_single_note)
 
         # Static file routes
         self.app.router.add_get("/static/{path:.*}", self.serve_static)
@@ -196,6 +202,127 @@ class NotepyOnlineServer:
             self.note_mgr._save_notes()
 
             return web.json_response(note.to_dict())
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def export_notes(self, request: Request) -> Response:
+        """Export all notes as JSON or Markdown."""
+        try:
+            format_type = request.query.get("format", "json")
+            notes = self.note_mgr.list_notes()
+
+            if format_type == "json":
+                data = {
+                    "export_date": str(datetime.now()),
+                    "version": "1.0",
+                    "notes": [note.to_dict() for note in notes],
+                }
+                return web.json_response(data)
+            elif format_type == "markdown":
+                markdown_content = "# Notepy Online Export\n\n"
+                for note in notes:
+                    markdown_content += f"## {note.title}\n\n"
+                    markdown_content += f"**Created:** {note.created_at}\n"
+                    markdown_content += f"**Updated:** {note.updated_at}\n"
+                    if note.tags:
+                        markdown_content += f"**Tags:** {', '.join(note.tags)}\n"
+                    markdown_content += "\n"
+                    # Convert HTML to markdown (basic conversion)
+                    content = note.content.replace("<p>", "").replace("</p>", "\n\n")
+                    content = content.replace("<br>", "\n")
+                    content = content.replace("<strong>", "**").replace(
+                        "</strong>", "**"
+                    )
+                    content = content.replace("<em>", "*").replace("</em>", "*")
+                    markdown_content += content + "\n\n---\n\n"
+
+                return web.Response(
+                    text=markdown_content,
+                    content_type="text/markdown",
+                    headers={
+                        "Content-Disposition": "attachment; filename=notepy_export.md"
+                    },
+                )
+            else:
+                return web.json_response({"error": "Unsupported format"}, status=400)
+
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def export_single_note(self, request: Request) -> Response:
+        """Export a single note."""
+        try:
+            note_id = request.match_info["note_id"]
+            format_type = request.query.get("format", "json")
+            note = self.note_mgr.get_note(note_id)
+
+            if not note:
+                return web.json_response({"error": "Note not found"}, status=404)
+
+            if format_type == "json":
+                return web.json_response(note.to_dict())
+            elif format_type == "markdown":
+                markdown_content = f"# {note.title}\n\n"
+                markdown_content += f"**Created:** {note.created_at}\n"
+                markdown_content += f"**Updated:** {note.updated_at}\n"
+                if note.tags:
+                    markdown_content += f"**Tags:** {', '.join(note.tags)}\n"
+                markdown_content += "\n"
+                # Convert HTML to markdown (basic conversion)
+                content = note.content.replace("<p>", "").replace("</p>", "\n\n")
+                content = content.replace("<br>", "\n")
+                content = content.replace("<strong>", "**").replace("</strong>", "**")
+                content = content.replace("<em>", "*").replace("</em>", "*")
+                markdown_content += content
+
+                return web.Response(
+                    text=markdown_content,
+                    content_type="text/markdown",
+                    headers={
+                        "Content-Disposition": f"attachment; filename={note.title.replace(' ', '_')}.md"
+                    },
+                )
+            else:
+                return web.json_response({"error": "Unsupported format"}, status=400)
+
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def import_notes(self, request: Request) -> Response:
+        """Import notes from JSON."""
+        try:
+            data = await request.json()
+
+            if not isinstance(data, dict) or "notes" not in data:
+                return web.json_response({"error": "Invalid import format"}, status=400)
+
+            imported_count = 0
+            errors = []
+
+            for note_data in data["notes"]:
+                try:
+                    title = note_data.get("title", "Imported Note")
+                    content = note_data.get("content", "")
+                    tags = note_data.get("tags", [])
+
+                    # Create the note
+                    note = self.note_mgr.create_note(
+                        title=title, content=content, tags=tags
+                    )
+                    imported_count += 1
+                except Exception as e:
+                    errors.append(
+                        f"Failed to import note '{note_data.get('title', 'Unknown')}': {str(e)}"
+                    )
+
+            return web.json_response(
+                {
+                    "message": f"Successfully imported {imported_count} notes",
+                    "imported_count": imported_count,
+                    "errors": errors,
+                }
+            )
+
         except Exception as e:
             return web.json_response({"error": str(e)}, status=500)
 
