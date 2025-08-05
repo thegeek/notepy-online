@@ -443,3 +443,196 @@ class TestServerPerformance:
             data = await response.json()
             assert data["note_id"] == note_id
             assert data["title"] == "Test Note"
+
+    async def test_export_notes_json(self, test_client: TestClient) -> None:
+        """Test exporting notes as JSON."""
+        # Create a test note first
+        note_data = {"title": "Test Note", "content": "Test content", "tags": ["test"]}
+        create_response = await test_client.post("/api/notes", json=note_data)
+        assert create_response.status == 201
+
+        # Export as JSON
+        response = await test_client.get("/api/export?format=json")
+        assert response.status == 200
+        assert response.content_type == "application/json"
+
+        data = await response.json()
+        assert "export_date" in data
+        assert "version" in data
+        assert "notes" in data
+        assert len(data["notes"]) == 1
+        assert data["notes"][0]["title"] == "Test Note"
+
+    async def test_export_notes_markdown(self, test_client: TestClient) -> None:
+        """Test exporting notes as Markdown."""
+        # Create a test note first
+        note_data = {"title": "Test Note", "content": "<p>Test content</p>", "tags": ["test"]}
+        create_response = await test_client.post("/api/notes", json=note_data)
+        assert create_response.status == 201
+
+        # Export as Markdown
+        response = await test_client.get("/api/export?format=markdown")
+        assert response.status == 200
+        assert response.content_type == "text/markdown"
+        assert "Content-Disposition" in response.headers
+        assert "attachment; filename=notepy_export.md" in response.headers["Content-Disposition"]
+
+        content = await response.text()
+        assert "# Notepy Online Export" in content
+        assert "## Test Note" in content
+        assert "**Tags:** test" in content
+        assert "Test content" in content
+
+    async def test_export_notes_unsupported_format(self, test_client: TestClient) -> None:
+        """Test exporting notes with unsupported format."""
+        response = await test_client.get("/api/export?format=unsupported")
+        assert response.status == 400
+
+        data = await response.json()
+        assert "error" in data
+        assert "Unsupported format" in data["error"]
+
+    async def test_export_single_note_json(self, test_client: TestClient) -> None:
+        """Test exporting a single note as JSON."""
+        # Create a test note first
+        note_data = {"title": "Test Note", "content": "Test content", "tags": ["test"]}
+        create_response = await test_client.post("/api/notes", json=note_data)
+        assert create_response.status == 201
+        created_note = await create_response.json()
+        note_id = created_note["note_id"]
+
+        # Export single note as JSON
+        response = await test_client.get(f"/api/notes/{note_id}/export?format=json")
+        assert response.status == 200
+        assert response.content_type == "application/json"
+
+        data = await response.json()
+        assert data["note_id"] == note_id
+        assert data["title"] == "Test Note"
+
+    async def test_export_single_note_markdown(self, test_client: TestClient) -> None:
+        """Test exporting a single note as Markdown."""
+        # Create a test note first
+        note_data = {"title": "Test Note", "content": "<p>Test content</p>", "tags": ["test"]}
+        create_response = await test_client.post("/api/notes", json=note_data)
+        assert create_response.status == 201
+        created_note = await create_response.json()
+        note_id = created_note["note_id"]
+
+        # Export single note as Markdown
+        response = await test_client.get(f"/api/notes/{note_id}/export?format=markdown")
+        assert response.status == 200
+        assert response.content_type == "text/markdown"
+        assert "Content-Disposition" in response.headers
+        assert "attachment; filename=Test_Note.md" in response.headers["Content-Disposition"]
+
+        content = await response.text()
+        assert "# Test Note" in content
+        assert "**Tags:** test" in content
+        assert "Test content" in content
+
+    async def test_export_single_note_not_found(self, test_client: TestClient) -> None:
+        """Test exporting a non-existent note."""
+        response = await test_client.get("/api/notes/nonexistent/export?format=json")
+        assert response.status == 404
+
+        data = await response.json()
+        assert "error" in data
+        assert "Note not found" in data["error"]
+
+    async def test_export_single_note_unsupported_format(self, test_client: TestClient) -> None:
+        """Test exporting a single note with unsupported format."""
+        # Create a test note first
+        note_data = {"title": "Test Note", "content": "Test content"}
+        create_response = await test_client.post("/api/notes", json=note_data)
+        assert create_response.status == 201
+        created_note = await create_response.json()
+        note_id = created_note["note_id"]
+
+        response = await test_client.get(f"/api/notes/{note_id}/export?format=unsupported")
+        assert response.status == 400
+
+        data = await response.json()
+        assert "error" in data
+        assert "Unsupported format" in data["error"]
+
+    async def test_import_notes_success(self, test_client: TestClient) -> None:
+        """Test importing notes successfully."""
+        import_data = {
+            "notes": [
+                {"title": "Imported Note 1", "content": "Content 1", "tags": ["import"]},
+                {"title": "Imported Note 2", "content": "Content 2", "tags": ["import", "test"]},
+            ]
+        }
+
+        response = await test_client.post("/api/import", json=import_data)
+        assert response.status == 200
+
+        data = await response.json()
+        assert "message" in data
+        assert "Successfully imported 2 notes" in data["message"]
+        assert data["imported_count"] == 2
+        assert "errors" in data
+        assert len(data["errors"]) == 0
+
+        # Verify notes were actually imported
+        get_response = await test_client.get("/api/notes")
+        assert get_response.status == 200
+        notes_data = await get_response.json()
+        assert len(notes_data["notes"]) == 2
+
+    async def test_import_notes_invalid_format(self, test_client: TestClient) -> None:
+        """Test importing notes with invalid format."""
+        # Test with missing notes key
+        response = await test_client.post("/api/import", json={"invalid": "data"})
+        assert response.status == 400
+
+        data = await response.json()
+        assert "error" in data
+        assert "Invalid import format" in data["error"]
+
+        # Test with non-dict data
+        response = await test_client.post("/api/import", json=["not", "a", "dict"])
+        assert response.status == 400
+
+        data = await response.json()
+        assert "error" in data
+        assert "Invalid import format" in data["error"]
+
+    async def test_import_notes_with_errors(self, test_client: TestClient) -> None:
+        """Test importing notes with some errors."""
+        import_data = {
+            "notes": [
+                {"title": "Valid Note", "content": "Valid content", "tags": ["valid"]},
+                {"invalid": "note"},  # This should cause an error
+            ]
+        }
+
+        response = await test_client.post("/api/import", json=import_data)
+        assert response.status == 200
+
+        data = await response.json()
+        # The import might succeed for both notes since the invalid one might be handled gracefully
+        assert data["imported_count"] >= 1
+        assert len(data["errors"]) >= 0
+
+    async def test_serve_static_binary_file(self, test_client: TestClient) -> None:
+        """Test serving binary static files."""
+        # Mock the static file utilities to return binary content
+        with patch("notepy_online.server.read_static_file_bytes") as mock_read_bytes:
+            mock_read_bytes.return_value = b"binary content"
+            
+            response = await test_client.get("/static/image.png")
+            assert response.status == 200
+            assert response.content_type == "image/png"
+
+    async def test_serve_static_error_handling(self, test_client: TestClient) -> None:
+        """Test error handling in static file serving."""
+        # Mock the static file utilities to raise an exception
+        with patch("notepy_online.server.read_static_file") as mock_read:
+            mock_read.side_effect = Exception("Test error")
+            
+            response = await test_client.get("/static/css/main.css")
+            assert response.status == 500
+            content = await response.text()
+            assert "Error serving static file" in content

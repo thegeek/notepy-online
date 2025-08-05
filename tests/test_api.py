@@ -1,3 +1,155 @@
+"""Tests for the Notepy Online API functionality."""
+
+import asyncio
+import json
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+import pytest_asyncio
+from aiohttp import web
+from aiohttp.test_utils import TestClient, TestServer
+
+from notepy_online.server import NotepyOnlineServer
+from notepy_online.static_utils import (
+    get_static_file_path,
+    read_static_file,
+    read_static_file_bytes,
+    get_static_file_mime_type,
+    list_static_files,
+)
+
+
+@pytest.mark.api
+class TestStaticUtils:
+    """Test cases for static utilities."""
+
+    def test_get_static_file_mime_type_css(self) -> None:
+        """Test MIME type detection for CSS files."""
+        assert get_static_file_mime_type("style.css") == "text/css"
+        assert get_static_file_mime_type("/path/to/main.css") == "text/css"
+
+    def test_get_static_file_mime_type_js(self) -> None:
+        """Test MIME type detection for JavaScript files."""
+        assert get_static_file_mime_type("script.js") == "application/javascript"
+        assert get_static_file_mime_type("/path/to/app.js") == "application/javascript"
+
+    def test_get_static_file_mime_type_html(self) -> None:
+        """Test MIME type detection for HTML files."""
+        assert get_static_file_mime_type("index.html") == "text/html"
+        assert get_static_file_mime_type("page.htm") == "text/html"
+
+    def test_get_static_file_mime_type_images(self) -> None:
+        """Test MIME type detection for image files."""
+        assert get_static_file_mime_type("image.png") == "image/png"
+        assert get_static_file_mime_type("photo.jpg") == "image/jpeg"
+        assert get_static_file_mime_type("icon.gif") == "image/gif"
+        assert get_static_file_mime_type("logo.svg") == "image/svg+xml"
+
+    def test_get_static_file_mime_type_fonts(self) -> None:
+        """Test MIME type detection for font files."""
+        assert get_static_file_mime_type("font.woff") == "font/woff"
+        assert get_static_file_mime_type("font.woff2") == "font/woff2"
+        assert get_static_file_mime_type("font.ttf") == "font/ttf"
+        assert get_static_file_mime_type("font.otf") == "font/otf"
+
+    def test_get_static_file_mime_type_unknown(self) -> None:
+        """Test MIME type detection for unknown file types."""
+        assert get_static_file_mime_type("file.xyz") == "application/octet-stream"
+        assert get_static_file_mime_type("noextension") == "application/octet-stream"
+
+    @patch("notepy_online.static_utils.importlib.resources.path")
+    def test_get_static_file_path_success(self, mock_path: MagicMock) -> None:
+        """Test successful static file path retrieval."""
+        mock_path.return_value.__enter__.return_value = Path("/fake/path/file.css")
+        
+        result = get_static_file_path("css/main.css")
+        
+        assert result == Path("/fake/path/file.css")
+        mock_path.assert_called_once_with("notepy_online.static", "css/main.css")
+
+    @patch("notepy_online.static_utils.importlib.resources.path")
+    def test_get_static_file_path_not_found(self, mock_path: MagicMock) -> None:
+        """Test static file path retrieval when file doesn't exist."""
+        mock_path.side_effect = FileNotFoundError("File not found")
+        
+        with pytest.raises(FileNotFoundError, match="Static file not found: nonexistent.css"):
+            get_static_file_path("nonexistent.css")
+
+    @patch("notepy_online.static_utils.importlib.resources.open_text")
+    def test_read_static_file_success(self, mock_open_text: MagicMock) -> None:
+        """Test successful static file reading."""
+        mock_file = MagicMock()
+        mock_file.read.return_value = "/* CSS content */"
+        mock_open_text.return_value.__enter__.return_value = mock_file
+        
+        result = read_static_file("css/main.css")
+        
+        assert result == "/* CSS content */"
+        mock_open_text.assert_called_once_with("notepy_online.static", "css/main.css")
+
+    @patch("notepy_online.static_utils.importlib.resources.open_text")
+    def test_read_static_file_not_found(self, mock_open_text: MagicMock) -> None:
+        """Test static file reading when file doesn't exist."""
+        mock_open_text.side_effect = FileNotFoundError("File not found")
+        
+        with pytest.raises(FileNotFoundError, match="Static file not found: nonexistent.css"):
+            read_static_file("nonexistent.css")
+
+    @patch("notepy_online.static_utils.importlib.resources.open_binary")
+    def test_read_static_file_bytes_success(self, mock_open_binary: MagicMock) -> None:
+        """Test successful static file reading as bytes."""
+        mock_file = MagicMock()
+        mock_file.read.return_value = b"/* CSS content */"
+        mock_open_binary.return_value.__enter__.return_value = mock_file
+        
+        result = read_static_file_bytes("css/main.css")
+        
+        assert result == b"/* CSS content */"
+        mock_open_binary.assert_called_once_with("notepy_online.static", "css/main.css")
+
+    @patch("notepy_online.static_utils.importlib.resources.open_binary")
+    def test_read_static_file_bytes_not_found(self, mock_open_binary: MagicMock) -> None:
+        """Test static file reading as bytes when file doesn't exist."""
+        mock_open_binary.side_effect = FileNotFoundError("File not found")
+        
+        with pytest.raises(FileNotFoundError, match="Static file not found: nonexistent.css"):
+            read_static_file_bytes("nonexistent.css")
+
+    @patch("notepy_online.static_utils.importlib.resources.path")
+    def test_list_static_files_success(self, mock_path: MagicMock, temp_dir: Path) -> None:
+        """Test successful listing of static files."""
+        # Create mock static directory structure
+        static_dir = temp_dir / "static"
+        static_dir.mkdir()
+        (static_dir / "css").mkdir()
+        (static_dir / "js").mkdir()
+        (static_dir / "css" / "main.css").write_text("/* CSS */")
+        (static_dir / "js" / "app.js").write_text("// JS")
+        (static_dir / "index.html").write_text("<html>")
+        
+        mock_path.return_value.__enter__.return_value = static_dir
+        
+        result = list_static_files()
+        
+        # Sort for consistent comparison and normalize path separators
+        result = [path.replace('\\', '/') for path in result]
+        result.sort()
+        expected = ["css/main.css", "index.html", "js/app.js"]
+        expected.sort()
+        
+        assert result == expected
+
+    @patch("notepy_online.static_utils.importlib.resources.path")
+    def test_list_static_files_not_found(self, mock_path: MagicMock) -> None:
+        """Test listing static files when directory doesn't exist."""
+        mock_path.side_effect = FileNotFoundError("Directory not found")
+        
+        result = list_static_files()
+        
+        assert result == []
+
+
 """API tests for the Notepy Online web server."""
 
 import json
@@ -103,6 +255,9 @@ class TestNotesAPI:
             headers={"Content-Type": "application/json"},
         )
         assert response.status == 500
+
+        data = await response.json()
+        assert "error" in data
 
     async def test_get_note_success(self, api_client: TestClient) -> None:
         """Test successful note retrieval."""
