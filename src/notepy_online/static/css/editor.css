@@ -171,28 +171,38 @@
     flex: 1;
     padding: 1.5rem;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-.tox-tinymce {
-    border: 1px solid #2a2a2a !important;
-    border-radius: 8px !important;
+#editor {
+    flex: 1;
+    min-height: 400px;
 }
 
-.tox .tox-toolbar {
-    background: #1a1a1a !important;
-    border-bottom: 1px solid #2a2a2a !important;
+/* Quill.js custom styling */
+.ql-container.ql-snow {
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    background: #0a0a0a;
+    flex: 1;
 }
 
-.tox .tox-edit-area {
-    background: #0a0a0a !important;
+.ql-toolbar.ql-snow {
+    border: 1px solid #2a2a2a;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    background: #1a1a1a;
 }
 
-.tox .tox-edit-area__iframe {
-    background: #0a0a0a !important;
+.ql-editor {
+    min-height: 400px;
+    background: #0a0a0a;
+    color: #ffffff;
 }
 
-.tox .tox-edit-focus {
-    border-color: #667eea !important;
+.ql-editor:focus {
+    border-color: #667eea;
 }
 
 .save-indicator {

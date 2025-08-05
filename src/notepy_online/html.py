@@ -356,7 +356,8 @@ MAIN_PAGE = f"""
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
     <link rel="stylesheet" href="/static/css/editor.css">
 </head>
@@ -392,7 +393,7 @@ MAIN_PAGE = f"""
             </div>
             
             <div class="editor-container">
-                <textarea id="editor"></textarea>
+                <div id="editor"></div>
             </div>
         </div>
     </div>

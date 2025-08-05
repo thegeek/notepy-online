@@ -5,54 +5,102 @@ let currentNoteId = null;
 let editor = null;
 let autoSaveTimeout = null;
 
-// Initialize TinyMCE
-tinymce.init({
-    selector: '#editor',
-    height: '100%',
-    menubar: false,
-    plugins: [
-        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-        'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-        'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-    ],
-    toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
-    content_style: `
-        body { 
+// Initialize Quill.js
+document.addEventListener('DOMContentLoaded', function() {
+    // Configure Quill toolbar
+    const toolbarOptions = [
+        ['bold', 'italic', 'underline', 'strike'],
+        ['blockquote', 'code-block'],
+        [{ 'header': 1 }, { 'header': 2 }],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'script': 'sub'}, { 'script': 'super' }],
+        [{ 'indent': '-1'}, { 'indent': '+1' }],
+        [{ 'direction': 'rtl' }],
+        [{ 'size': ['small', false, 'large', 'huge'] }],
+        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'font': [] }],
+        [{ 'align': [] }],
+        ['clean'],
+        ['link', 'image']
+    ];
+
+    // Initialize Quill
+    editor = new Quill('#editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: toolbarOptions
+        },
+        placeholder: 'Start writing your note...',
+        readOnly: false
+    });
+
+    // Custom styling for dark theme
+    const style = document.createElement('style');
+    style.textContent = `
+        .ql-editor {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             font-size: 16px;
             line-height: 1.6;
             color: #ffffff;
             background: #0a0a0a;
-            padding: 20px;
+            min-height: 400px;
         }
-        h1, h2, h3, h4, h5, h6 { color: #ffffff; }
-        p { margin-bottom: 1rem; }
-        ul, ol { margin-bottom: 1rem; }
-        li { margin-bottom: 0.5rem; }
-        code { background: #2a2a2a; padding: 2px 4px; border-radius: 4px; }
-        pre { background: #2a2a2a; padding: 1rem; border-radius: 8px; overflow-x: auto; }
-        blockquote { border-left: 4px solid #667eea; padding-left: 1rem; margin: 1rem 0; color: #a0a0a0; }
-    `,
-    setup: function(editor) {
-        window.editor = editor;
+        .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4, .ql-editor h5, .ql-editor h6 { 
+            color: #ffffff; 
+        }
+        .ql-editor p { margin-bottom: 1rem; }
+        .ql-editor ul, .ql-editor ol { margin-bottom: 1rem; }
+        .ql-editor li { margin-bottom: 0.5rem; }
+        .ql-editor code { background: #2a2a2a; padding: 2px 4px; border-radius: 4px; }
+        .ql-editor pre { background: #2a2a2a; padding: 1rem; border-radius: 8px; overflow-x: auto; }
+        .ql-editor blockquote { border-left: 4px solid #667eea; padding-left: 1rem; margin: 1rem 0; color: #a0a0a0; }
         
-        // Auto-save on content change
-        editor.on('input', function() {
-            scheduleAutoSave();
-        });
-        
-        // Keyboard shortcuts
-        editor.on('keydown', function(e) {
-            if (e.ctrlKey && e.key === 's') {
-                e.preventDefault();
-                saveCurrentNote();
-            }
-        });
-    }
-});
+        /* Dark theme for toolbar */
+        .ql-toolbar.ql-snow {
+            border: 1px solid #333;
+            background: #1a1a1a;
+        }
+        .ql-toolbar.ql-snow .ql-stroke {
+            stroke: #ffffff;
+        }
+        .ql-toolbar.ql-snow .ql-fill {
+            fill: #ffffff;
+        }
+        .ql-toolbar.ql-snow .ql-picker {
+            color: #ffffff;
+        }
+        .ql-toolbar.ql-snow .ql-picker-options {
+            background: #1a1a1a;
+            border: 1px solid #333;
+        }
+        .ql-toolbar.ql-snow .ql-picker-item {
+            color: #ffffff;
+        }
+        .ql-toolbar.ql-snow .ql-picker-item.ql-selected {
+            color: #667eea;
+        }
+        .ql-container.ql-snow {
+            border: 1px solid #333;
+            background: #0a0a0a;
+        }
+    `;
+    document.head.appendChild(style);
 
-// Load initial data
-document.addEventListener('DOMContentLoaded', function() {
+    // Auto-save on content change
+    editor.on('text-change', function() {
+        scheduleAutoSave();
+    });
+
+    // Keyboard shortcuts
+    editor.on('keydown', function(e) {
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            saveCurrentNote();
+        }
+    });
+
+    // Load initial data
     loadNotes();
     
     // Search functionality
@@ -61,6 +109,8 @@ document.addEventListener('DOMContentLoaded', function() {
         filterNotes(searchTerm);
     });
 });
+
+
 
 async function loadNotes() {
     try {
@@ -121,7 +171,7 @@ function selectNote(noteId) {
     
     // Set editor content
     if (editor) {
-        editor.setContent(note.content);
+        editor.root.innerHTML = note.content;
     }
     
     // Update active state
@@ -136,7 +186,7 @@ function createNewNote() {
     document.getElementById('editorTitle').textContent = 'New Note';
     
     if (editor) {
-        editor.setContent('');
+        editor.root.innerHTML = '';
     }
     
     // Remove active state from all items
@@ -158,7 +208,7 @@ function scheduleAutoSave() {
 async function saveCurrentNote(isAutoSave = false) {
     if (!editor) return;
     
-    const content = editor.getContent();
+    const content = editor.root.innerHTML;
     const title = document.getElementById('editorTitle').textContent;
     
     if (!title || title === 'Select a note or create a new one' || title === 'New Note') {
