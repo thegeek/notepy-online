@@ -131,14 +131,12 @@ notepy-online/
 ├── src/
 │   └── notepy_online/
 │       ├── __init__.py          # Package initialization
-│       ├── main.py              # Main entry point
-│       ├── cli.py               # Command-line interface
+│       ├── cli.py               # Command-line interface (main entry point)
 │       ├── core.py              # Core business logic
 │       ├── resource.py          # Resource management
 │       └── server.py            # Web server implementation
 ├── pyproject.toml               # Project configuration
-├── README.md                    # This file
-└── main.py                      # Root entry point
+└── README.md                    # This file
 ```
 
 ### Core Components

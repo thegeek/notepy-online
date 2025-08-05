@@ -631,14 +631,14 @@ COMMON_STYLES = """
 </style>
 """
 
-# Welcome page HTML
-WELCOME_PAGE = f"""
+# Welcome page HTML (now becomes STATUS_PAGE)
+STATUS_PAGE = f"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notepy Online - Professional Note Management</title>
+    <title>Notepy Online - Status Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -656,10 +656,10 @@ WELCOME_PAGE = f"""
                         <div class="status-dot"></div>
                         Server Running
                     </div>
-                    <button class="action-button" onclick="showCreateNote()">
+                    <a href="/" class="action-button">
                         <span>✏️</span>
-                        Create Note
-                    </button>
+                        Go to Editor
+                    </a>
                 </div>
             </div>
         </div>
@@ -704,60 +704,24 @@ WELCOME_PAGE = f"""
                 <div class="section-title">
                     <span>📝</span>
                     <span>Your Notes</span>
-                    <button class="btn" onclick="showCreateNote()" style="margin-left: auto;">Create Note</button>
                 </div>
                 
                 <div id="notesContainer">
                     <div class="empty-state">
                         <div class="empty-icon">📝</div>
                         <div class="empty-title">No Notes Yet</div>
-                        <div class="empty-description">Create your first note to get started</div>
-                        <button class="btn" onclick="showCreateNote()">Create Your First Note</button>
+                        <div class="empty-description">Use the editor to create your first note</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Create/Edit Note Modal -->
-    <div id="noteModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; align-items: center; justify-content: center;">
-        <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 16px; max-width: 90vw; max-height: 90vh; width: 800px; overflow: hidden;">
-            <div style="background: #252525; padding: 1.5rem; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="font-size: 1.2rem; font-weight: 600; color: #ffffff;" id="modalTitle">Create Note</h3>
-                <button onclick="closeNoteModal()" style="background: none; border: none; color: #a0a0a0; font-size: 1.5rem; cursor: pointer; padding: 0.5rem;">×</button>
-            </div>
-            <div style="padding: 1.5rem; max-height: 70vh; overflow-y: auto;">
-                <form id="noteForm">
-                    <div class="form-group">
-                        <label class="form-label">Title</label>
-                        <input type="text" class="form-input" id="noteTitle" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Content</label>
-                        <textarea class="form-textarea" id="noteContent" placeholder="Write your note here..."></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Tags</label>
-                        <div class="tag-input-container" id="tagContainer">
-                            <input type="text" class="tag-input" id="tagInput" placeholder="Add tags...">
-                        </div>
-                    </div>
-                    
-                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                        <button type="button" class="btn btn-secondary" onclick="closeNoteModal()">Cancel</button>
-                        <button type="submit" class="btn" id="saveNoteBtn">Save Note</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+
     
     <script>
         let currentNotes = [];
         let currentTags = [];
-        let editingNoteId = null;
         
         // Load initial data
         document.addEventListener('DOMContentLoaded', function() {{
@@ -851,7 +815,6 @@ WELCOME_PAGE = f"""
                                 `).join('')}}
                             </div>
                             <div class="note-actions">
-                                <button class="action-btn" onclick="editNote('${{note.id}}', event)">✏️</button>
                                 <button class="action-btn" onclick="deleteNote('${{note.id}}', event)">🗑️</button>
                             </div>
                         </div>
@@ -890,126 +853,17 @@ WELCOME_PAGE = f"""
             event.target.classList.add('active');
         }}
         
-        function showCreateNote() {{
-            editingNoteId = null;
-            document.getElementById('modalTitle').textContent = 'Create Note';
-            document.getElementById('noteTitle').value = '';
-            document.getElementById('noteContent').value = '';
-            document.getElementById('tagContainer').innerHTML = '<input type="text" class="tag-input" id="tagInput" placeholder="Add tags...">';
-            document.getElementById('noteModal').style.display = 'flex';
-            
-            // Focus on title input
-            setTimeout(() => document.getElementById('noteTitle').focus(), 100);
-        }}
+
         
-        function editNote(noteId, event) {{
-            event.stopPropagation();
-            const note = currentNotes.find(n => n.id === noteId);
-            if (!note) return;
-            
-            editingNoteId = noteId;
-            document.getElementById('modalTitle').textContent = 'Edit Note';
-            document.getElementById('noteTitle').value = note.title;
-            document.getElementById('noteContent').value = note.content;
-            
-            // Display existing tags
-            const tagContainer = document.getElementById('tagContainer');
-            tagContainer.innerHTML = '';
-            (note.tags || []).forEach(tag => {{
-                addTagToContainer(tag);
-            }});
-            tagContainer.innerHTML += '<input type="text" class="tag-input" id="tagInput" placeholder="Add tags...">';
-            
-            document.getElementById('noteModal').style.display = 'flex';
-        }}
+
         
-        function closeNoteModal() {{
-            document.getElementById('noteModal').style.display = 'none';
-            editingNoteId = null;
-        }}
+
         
-        // Tag management
-        document.addEventListener('click', function(e) {{
-            if (e.target.classList.contains('tag-remove')) {{
-                e.target.parentElement.remove();
-            }}
-        }});
+
         
-        document.addEventListener('keydown', function(e) {{
-            if (e.target.id === 'tagInput' && e.key === 'Enter') {{
-                e.preventDefault();
-                const tag = e.target.value.trim();
-                if (tag) {{
-                    addTagToContainer(tag);
-                    e.target.value = '';
-                }}
-            }}
-        }});
+
         
-        function addTagToContainer(tag) {{
-            const tagContainer = document.getElementById('tagContainer');
-            const tagElement = document.createElement('span');
-            tagElement.className = 'tag';
-            tagElement.innerHTML = `
-                ${{escapeHtml(tag)}}
-                <button class="tag-remove" onclick="this.parentElement.remove()">×</button>
-            `;
-            tagContainer.insertBefore(tagElement, tagContainer.lastElementChild);
-        }}
-        
-        // Form submission
-        document.getElementById('noteForm').addEventListener('submit', async function(e) {{
-            e.preventDefault();
-            
-            const title = document.getElementById('noteTitle').value.trim();
-            const content = document.getElementById('noteContent').value.trim();
-            const tags = Array.from(document.querySelectorAll('.tag')).map(tag => tag.textContent.trim());
-            
-            if (!title) {{
-                showToast('Title is required', 'error');
-                return;
-            }}
-            
-            const saveBtn = document.getElementById('saveNoteBtn');
-            saveBtn.disabled = true;
-            saveBtn.innerHTML = '<span class="loading-spinner"></span> Saving...';
-            
-            try {{
-                const noteData = {{
-                    title: title,
-                    content: content,
-                    tags: tags
-                }};
-                
-                const url = editingNoteId ? `/api/notes/${{editingNoteId}}` : '/api/notes';
-                const method = editingNoteId ? 'PUT' : 'POST';
-                
-                const response = await fetch(url, {{
-                    method: method,
-                    headers: {{
-                        'Content-Type': 'application/json'
-                    }},
-                    body: JSON.stringify(noteData)
-                }});
-                
-                if (response.ok) {{
-                    showToast(editingNoteId ? 'Note updated successfully' : 'Note created successfully');
-                    closeNoteModal();
-                    loadNotes();
-                    loadTags();
-                    loadStats();
-                }} else {{
-                    const error = await response.json();
-                    showToast('Error: ' + (error.error || 'Unknown error'), 'error');
-                }}
-            }} catch (error) {{
-                console.error('Error saving note:', error);
-                showToast('Error saving note', 'error');
-            }} finally {{
-                saveBtn.disabled = false;
-                saveBtn.textContent = editingNoteId ? 'Update Note' : 'Save Note';
-            }}
-        }});
+
         
         async function deleteNote(noteId, event) {{
             event.stopPropagation();
@@ -1096,6 +950,575 @@ WELCOME_PAGE = f"""
 </html>
 """
 
+# Main page with WYSIWYG editor
+MAIN_PAGE = f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notepy Online - Editor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        
+        body {{
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            line-height: 1.6;
+            height: 100vh;
+            overflow: hidden;
+        }}
+        
+        .app-container {{
+            display: flex;
+            height: 100vh;
+            transition: all 0.3s ease;
+        }}
+        
+        .sidebar {{
+            width: 300px;
+            background: #1a1a1a;
+            border-right: 1px solid #2a2a2a;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }}
+        
+        .sidebar.collapsed {{
+            transform: translateX(-100%);
+        }}
+        
+        .sidebar-header {{
+            padding: 1rem;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }}
+        
+        .sidebar-title {{
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffffff;
+        }}
+        
+        .toggle-btn {{
+            background: none;
+            border: none;
+            color: #a0a0a0;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }}
+        
+        .toggle-btn:hover {{
+            background: #2a2a2a;
+            color: #ffffff;
+        }}
+        
+        .search-container {{
+            padding: 1rem;
+            border-bottom: 1px solid #2a2a2a;
+        }}
+        
+        .search-input {{
+            width: 100%;
+            padding: 0.75rem;
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 0.9rem;
+        }}
+        
+        .search-input:focus {{
+            outline: none;
+            border-color: #667eea;
+        }}
+        
+        .notes-list {{
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }}
+        
+        .note-item {{
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }}
+        
+        .note-item:hover {{
+            background: #3a3a3a;
+            border-color: #4a4a4a;
+        }}
+        
+        .note-item.active {{
+            background: #667eea;
+            border-color: #667eea;
+        }}
+        
+        .note-item-title {{
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            color: #ffffff;
+        }}
+        
+        .note-item-preview {{
+            font-size: 0.8rem;
+            color: #a0a0a0;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }}
+        
+        .note-item-date {{
+            font-size: 0.7rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }}
+        
+        .main-content {{
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0a0a0a;
+        }}
+        
+        .editor-header {{
+            padding: 1rem 1.5rem;
+            background: #1a1a1a;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }}
+        
+        .editor-title {{
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #ffffff;
+        }}
+        
+        .editor-actions {{
+            display: flex;
+            gap: 0.5rem;
+        }}
+        
+        .btn {{
+            padding: 0.5rem 1rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }}
+        
+        .btn:hover {{
+            background: #5a6fd8;
+        }}
+        
+        .btn-secondary {{
+            background: #3a3a3a;
+        }}
+        
+        .btn-secondary:hover {{
+            background: #4a4a4a;
+        }}
+        
+        .editor-container {{
+            flex: 1;
+            padding: 1.5rem;
+            overflow: hidden;
+        }}
+        
+        .tox-tinymce {{
+            border: 1px solid #2a2a2a !important;
+            border-radius: 8px !important;
+        }}
+        
+        .tox .tox-toolbar {{
+            background: #1a1a1a !important;
+            border-bottom: 1px solid #2a2a2a !important;
+        }}
+        
+        .tox .tox-edit-area {{
+            background: #0a0a0a !important;
+        }}
+        
+        .tox .tox-edit-area__iframe {{
+            background: #0a0a0a !important;
+        }}
+        
+        .tox .tox-edit-focus {{
+            border-color: #667eea !important;
+        }}
+        
+        .save-indicator {{
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 0.75rem 1rem;
+            background: #00b894;
+            color: white;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }}
+        
+        .save-indicator.show {{
+            opacity: 1;
+            transform: translateY(0);
+        }}
+        
+        .save-indicator.saving {{
+            background: #f39c12;
+        }}
+        
+        .save-indicator.error {{
+            background: #e74c3c;
+        }}
+        
+        .mobile-toggle {{
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 200;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }}
+        
+        @media (max-width: 768px) {{
+            .sidebar {{
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                width: 280px;
+                z-index: 150;
+            }}
+            
+            .mobile-toggle {{
+                display: block;
+            }}
+            
+            .main-content {{
+                margin-left: 0;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+    
+    <div class="app-container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">📝 Notes</div>
+                <button class="toggle-btn" onclick="toggleSidebar()">×</button>
+            </div>
+            
+            <div class="search-container">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search notes...">
+            </div>
+            
+            <div class="notes-list" id="notesList">
+                <div class="note-item" onclick="createNewNote()">
+                    <div class="note-item-title">➕ New Note</div>
+                    <div class="note-item-preview">Create a new note</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="editor-header">
+                <div class="editor-title" id="editorTitle">Select a note or create a new one</div>
+                <div class="editor-actions">
+                    <button class="btn btn-secondary" onclick="window.location.href='/status'">📊 Status</button>
+                    <button class="btn" onclick="saveCurrentNote()" id="saveBtn">💾 Save</button>
+                </div>
+            </div>
+            
+            <div class="editor-container">
+                <textarea id="editor"></textarea>
+            </div>
+        </div>
+    </div>
+    
+    <div class="save-indicator" id="saveIndicator">Saved!</div>
+    
+    <script>
+        let currentNotes = [];
+        let currentNoteId = null;
+        let editor = null;
+        let autoSaveTimeout = null;
+        
+        // Initialize TinyMCE
+        tinymce.init({{
+            selector: '#editor',
+            height: '100%',
+            menubar: false,
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+            ],
+            toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
+            content_style: `
+                body {{ 
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    color: #ffffff;
+                    background: #0a0a0a;
+                    padding: 20px;
+                }}
+                h1, h2, h3, h4, h5, h6 {{ color: #ffffff; }}
+                p {{ margin-bottom: 1rem; }}
+                ul, ol {{ margin-bottom: 1rem; }}
+                li {{ margin-bottom: 0.5rem; }}
+                code {{ background: #2a2a2a; padding: 2px 4px; border-radius: 4px; }}
+                pre {{ background: #2a2a2a; padding: 1rem; border-radius: 8px; overflow-x: auto; }}
+                blockquote {{ border-left: 4px solid #667eea; padding-left: 1rem; margin: 1rem 0; color: #a0a0a0; }}
+            `,
+            setup: function(editor) {{
+                window.editor = editor;
+                
+                // Auto-save on content change
+                editor.on('input', function() {{
+                    scheduleAutoSave();
+                }});
+                
+                // Keyboard shortcuts
+                editor.on('keydown', function(e) {{
+                    if (e.ctrlKey && e.key === 's') {{
+                        e.preventDefault();
+                        saveCurrentNote();
+                    }}
+                }});
+            }}
+        }});
+        
+        // Load initial data
+        document.addEventListener('DOMContentLoaded', function() {{
+            loadNotes();
+            
+            // Search functionality
+            document.getElementById('searchInput').addEventListener('input', function(e) {{
+                const searchTerm = e.target.value.toLowerCase();
+                filterNotes(searchTerm);
+            }});
+        }});
+        
+        async function loadNotes() {{
+            try {{
+                const response = await fetch('/api/notes');
+                const data = await response.json();
+                currentNotes = data.notes || [];
+                displayNotes(currentNotes);
+            }} catch (error) {{
+                console.error('Error loading notes:', error);
+                showSaveIndicator('Error loading notes', 'error');
+            }}
+        }}
+        
+        function displayNotes(notes) {{
+            const container = document.getElementById('notesList');
+            
+            // Always show "New Note" option first
+            let html = `
+                <div class="note-item" onclick="createNewNote()">
+                    <div class="note-item-title">➕ New Note</div>
+                    <div class="note-item-preview">Create a new note</div>
+                </div>
+            `;
+            
+            // Add existing notes
+            notes.forEach(note => {{
+                const isActive = note.id === currentNoteId;
+                const preview = note.content.substring(0, 100) + (note.content.length > 100 ? '...' : '');
+                const date = new Date(note.created_at).toLocaleDateString();
+                
+                html += `
+                    <div class="note-item ${{isActive ? 'active' : ''}}" onclick="selectNote('${{note.id}}')">
+                        <div class="note-item-title">${{escapeHtml(note.title)}}</div>
+                        <div class="note-item-preview">${{escapeHtml(preview)}}</div>
+                        <div class="note-item-date">${{date}}</div>
+                    </div>
+                `;
+            }});
+            
+            container.innerHTML = html;
+        }}
+        
+        function filterNotes(searchTerm) {{
+            const filteredNotes = currentNotes.filter(note => {{
+                const titleMatch = note.title.toLowerCase().includes(searchTerm);
+                const contentMatch = note.content.toLowerCase().includes(searchTerm);
+                return titleMatch || contentMatch;
+            }});
+            displayNotes(filteredNotes);
+        }}
+        
+        function selectNote(noteId) {{
+            const note = currentNotes.find(n => n.id === noteId);
+            if (!note) return;
+            
+            currentNoteId = noteId;
+            document.getElementById('editorTitle').textContent = note.title;
+            
+            // Set editor content
+            if (editor) {{
+                editor.setContent(note.content);
+            }}
+            
+            // Update active state
+            document.querySelectorAll('.note-item').forEach(item => {{
+                item.classList.remove('active');
+            }});
+            event.currentTarget.classList.add('active');
+        }}
+        
+        function createNewNote() {{
+            currentNoteId = null;
+            document.getElementById('editorTitle').textContent = 'New Note';
+            
+            if (editor) {{
+                editor.setContent('');
+            }}
+            
+            // Remove active state from all items
+            document.querySelectorAll('.note-item').forEach(item => {{
+                item.classList.remove('active');
+            }});
+        }}
+        
+        function scheduleAutoSave() {{
+            if (autoSaveTimeout) {{
+                clearTimeout(autoSaveTimeout);
+            }}
+            
+            autoSaveTimeout = setTimeout(() => {{
+                saveCurrentNote(true);
+            }}, 2000); // Auto-save after 2 seconds of inactivity
+        }}
+        
+        async function saveCurrentNote(isAutoSave = false) {{
+            if (!editor) return;
+            
+            const content = editor.getContent();
+            const title = document.getElementById('editorTitle').textContent;
+            
+            if (!title || title === 'Select a note or create a new one' || title === 'New Note') {{
+                if (!isAutoSave) {{
+                    showSaveIndicator('Please enter a title for your note', 'error');
+                }}
+                return;
+            }}
+            
+            if (isAutoSave) {{
+                showSaveIndicator('Saving...', 'saving');
+            }}
+            
+            try {{
+                const noteData = {{
+                    title: title,
+                    content: content,
+                    tags: []
+                }};
+                
+                const url = currentNoteId ? `/api/notes/${{currentNoteId}}` : '/api/notes';
+                const method = currentNoteId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {{
+                    method: method,
+                    headers: {{
+                        'Content-Type': 'application/json'
+                    }},
+                    body: JSON.stringify(noteData)
+                }});
+                
+                if (response.ok) {{
+                    const savedNote = await response.json();
+                    
+                    if (!currentNoteId) {{
+                        currentNoteId = savedNote.id;
+                    }}
+                    
+                    // Reload notes to get updated list
+                    await loadNotes();
+                    
+                    if (!isAutoSave) {{
+                        showSaveIndicator('Note saved successfully!');
+                    }}
+                }} else {{
+                    const error = await response.json();
+                    showSaveIndicator('Error: ' + (error.error || 'Unknown error'), 'error');
+                }}
+            }} catch (error) {{
+                console.error('Error saving note:', error);
+                showSaveIndicator('Error saving note', 'error');
+            }}
+        }}
+        
+        function toggleSidebar() {{
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }}
+        
+        function showSaveIndicator(message, type = 'success') {{
+            const indicator = document.getElementById('saveIndicator');
+            indicator.textContent = message;
+            indicator.className = 'save-indicator show ' + type;
+            
+            setTimeout(() => {{
+                indicator.classList.remove('show');
+            }}, 3000);
+        }}
+        
+        function escapeHtml(text) {{
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }}
+    </script>
+</body>
+</html>
+"""
+
+# Keep the old WELCOME_PAGE for backward compatibility (now redirects to status)
+WELCOME_PAGE = STATUS_PAGE
+
 # Error page template
 ERROR_PAGE_TEMPLATE = f"""
 <!DOCTYPE html>
@@ -1152,4 +1575,6 @@ NOT_FOUND_PAGE = f"""
     </div>
 </body>
 </html>
+"""
 """ 
+"""

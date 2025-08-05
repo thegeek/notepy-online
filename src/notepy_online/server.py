@@ -24,7 +24,7 @@ from aiohttp.web import Request, Response
 
 from .resource import ResourceManager
 from .core import NoteManager
-from .html import WELCOME_PAGE, ERROR_PAGE_TEMPLATE, NOT_FOUND_PAGE
+from .html import MAIN_PAGE, STATUS_PAGE, ERROR_PAGE_TEMPLATE, NOT_FOUND_PAGE
 
 
 class NotepyOnlineServer:
@@ -58,6 +58,7 @@ class NotepyOnlineServer:
 
         # Web interface routes
         self.app.router.add_get("/", self.index)
+        self.app.router.add_get("/status", self.status)
 
     async def index(self, request: Request) -> Response:
         """Serve the main web interface."""
@@ -66,7 +67,16 @@ class NotepyOnlineServer:
 
     def _get_index_html(self) -> str:
         """Get the main HTML interface."""
-        return WELCOME_PAGE
+        return MAIN_PAGE
+
+    async def status(self, request: Request) -> Response:
+        """Serve the status dashboard page."""
+        html = self._get_status_html()
+        return web.Response(text=html, content_type="text/html")
+
+    def _get_status_html(self) -> str:
+        """Get the status HTML interface."""
+        return STATUS_PAGE
 
     async def get_notes(self, request: Request) -> Response:
         """Get all notes with optional filtering."""
