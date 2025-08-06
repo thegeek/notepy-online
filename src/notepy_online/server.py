@@ -13,19 +13,16 @@ Features:
 """
 
 import asyncio
-import json
 import ssl
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
-import aiohttp
 from aiohttp import web
 from aiohttp.web import Request, Response
 
 from .resource import ResourceManager
 from .core import NoteManager
-from .html import MAIN_PAGE, STATUS_PAGE, ERROR_PAGE_TEMPLATE, NOT_FOUND_PAGE
+from .html import MAIN_PAGE, STATUS_PAGE
 from .static_utils import (
     read_static_file,
     read_static_file_bytes,
@@ -306,9 +303,7 @@ class NotepyOnlineServer:
                     tags = note_data.get("tags", [])
 
                     # Create the note
-                    note = self.note_mgr.create_note(
-                        title=title, content=content, tags=tags
-                    )
+                    self.note_mgr.create_note(title=title, content=content, tags=tags)
                     imported_count += 1
                 except Exception as e:
                     errors.append(

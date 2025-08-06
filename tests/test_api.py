@@ -1,16 +1,12 @@
 """Tests for the Notepy Online API functionality."""
 
-import asyncio
-import json
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 import pytest_asyncio
-from aiohttp import web
-from aiohttp.test_utils import TestClient, TestServer
+from aiohttp.test_utils import TestClient
 
-from notepy_online.server import NotepyOnlineServer
 from notepy_online.static_utils import (
     get_static_file_path,
     read_static_file,
@@ -152,15 +148,6 @@ class TestStaticUtils:
 
 """API tests for the Notepy Online web server."""
 
-import json
-from typing import Any
-
-import pytest
-import pytest_asyncio
-from aiohttp import web
-from aiohttp.test_utils import TestClient, TestServer
-
-from notepy_online.server import NotepyOnlineServer
 
 
 @pytest.mark.api

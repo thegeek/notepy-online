@@ -346,7 +346,7 @@ STATUS_PAGE = f"""
 """
 
 # Main page with WYSIWYG editor
-MAIN_PAGE = f"""
+MAIN_PAGE = """
 <!DOCTYPE html>
 <html lang="en">
 <head>

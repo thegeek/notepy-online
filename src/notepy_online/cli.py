@@ -26,7 +26,6 @@ import asyncio
 import click
 import json
 from pathlib import Path
-from datetime import datetime
 
 from .server import run_server
 from .resource import ResourceManager
@@ -174,7 +173,7 @@ def create(title: str, content: str, tags: tuple[str, ...]) -> None:
         note_mgr = NoteManager(resource_mgr)
 
         note = note_mgr.create_note(title=title, content=content, tags=list(tags))
-        click.echo(f"✅ Note created successfully!")
+        click.echo("✅ Note created successfully!")
         click.echo(f"  ID: {note.note_id}")
         click.echo(f"  Title: {note.title}")
         click.echo(f"  Tags: {', '.join(note.tags) if note.tags else 'None'}")
@@ -258,13 +257,13 @@ def show(note_id: str, output: Path | None, pretty: bool) -> None:
                 )
             click.echo(f"✅ Note exported to: {output}")
         else:
-            click.echo(f"📝 Note Details:")
+            click.echo("📝 Note Details:")
             click.echo(f"  ID: {note.note_id}")
             click.echo(f"  Title: {note.title}")
             click.echo(f"  Tags: {', '.join(note.tags) if note.tags else 'None'}")
             click.echo(f"  Created: {note.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
             click.echo(f"  Updated: {note.updated_at.strftime('%Y-%m-%d %H:%M:%S')}")
-            click.echo(f"  Content:")
+            click.echo("  Content:")
             click.echo(f"    {note.content}")
 
     except Exception as e:
@@ -296,7 +295,7 @@ def edit(
             click.echo(f"❌ Note with ID '{note_id}' not found.", err=True)
             raise click.Abort()
 
-        click.echo(f"✅ Note updated successfully!")
+        click.echo("✅ Note updated successfully!")
         click.echo(f"  ID: {note.note_id}")
         click.echo(f"  Title: {note.title}")
         click.echo(f"  Tags: {', '.join(note.tags) if note.tags else 'None'}")
@@ -330,7 +329,7 @@ def delete(note_id: str, force: bool) -> None:
         if note_mgr.delete_note(note_id):
             click.echo(f"✅ Note '{note.title}' deleted successfully!")
         else:
-            click.echo(f"❌ Failed to delete note.", err=True)
+            click.echo("❌ Failed to delete note.", err=True)
 
     except Exception as e:
         click.echo(f"❌ Failed to delete note: {e}", err=True)

@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import pytest_asyncio
-from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
 from notepy_online.server import NotepyOnlineServer

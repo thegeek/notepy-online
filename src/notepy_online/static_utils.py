@@ -6,7 +6,6 @@ using importlib.resources for proper Python packaging.
 
 import importlib.resources
 from pathlib import Path
-from typing import Any
 
 
 def get_static_file_path(relative_path: str) -> Path:

@@ -371,7 +371,7 @@ class TestNoteManager:
         note_mgr = NoteManager(resource_mgr)
 
         # Create a note
-        note = note_mgr.create_note("Test Note", "Test content")
+        note_mgr.create_note("Test Note", "Test content")
 
         # Make the notes file unwritable to trigger an error
         note_mgr.notes_file = temp_dir / "nonexistent" / "notes.json"

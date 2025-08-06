@@ -8,7 +8,6 @@ from typing import AsyncGenerator, Generator
 
 import pytest
 import pytest_asyncio
-from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
 from notepy_online.core import Note, NoteManager
@@ -109,7 +108,6 @@ async def test_client(
     test_server: NotepyOnlineServer,
 ) -> AsyncGenerator[TestClient, None]:
     """Create a test client for the server."""
-    from aiohttp.test_utils import TestServer
 
     test_server_instance = TestServer(test_server.app)
     async with TestClient(test_server_instance) as client:
@@ -141,7 +139,6 @@ async def api_client(temp_dir: Path) -> AsyncGenerator[TestClient, None]:
 
     server.note_mgr = NoteManager(server.resource_mgr)
 
-    from aiohttp.test_utils import TestServer
 
     test_server_instance = TestServer(server.app)
     async with TestClient(test_server_instance) as client:
