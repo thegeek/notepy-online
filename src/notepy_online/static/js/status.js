@@ -1,5 +1,63 @@
 // Status page JavaScript for Notepy Online
 
+// Template utility functions - Retrieve templates from DOM
+function getTemplate(templateId) {
+    const templateElement = document.getElementById(templateId);
+    if (!templateElement) {
+        console.error(`Template '${templateId}' not found`);
+        return null;
+    }
+    return templateElement.textContent.trim();
+}
+
+function createElementFromTemplate(templateId, data = {}) {
+    const template = getTemplate(templateId);
+    if (!template) {
+        return null;
+    }
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = template;
+    const element = tempDiv.firstElementChild;
+    
+    // Apply data to template
+    if (data) {
+        applyDataToElement(element, data);
+    }
+    
+    return element;
+}
+
+function applyDataToElement(element, data) {
+    // Apply text content to elements with data attributes
+    Object.keys(data).forEach(key => {
+        const targetElement = element.querySelector(`[data-${key}]`);
+        if (targetElement) {
+            targetElement.textContent = data[key];
+        }
+    });
+    
+    // Apply classes
+    if (data.classes) {
+        Object.keys(data.classes).forEach(key => {
+            const targetElement = element.querySelector(`[data-class-${key}]`);
+            if (targetElement) {
+                targetElement.className = data.classes[key];
+            }
+        });
+    }
+    
+    // Apply attributes
+    if (data.attributes) {
+        Object.keys(data.attributes).forEach(key => {
+            const targetElement = element.querySelector(`[data-attr-${key}]`);
+            if (targetElement) {
+                targetElement.setAttribute(key, data.attributes[key]);
+            }
+        });
+    }
+}
+
 let currentNotes = [];
 let currentTags = [];
 
@@ -67,49 +125,61 @@ function displayNotes(notes) {
     const container = document.getElementById('notesContainer');
     
     if (notes.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon">📝</div>
-                <div class="empty-title">No Notes Found</div>
-                <div class="empty-description">Try adjusting your search or create a new note</div>
-                <button class="btn" onclick="showCreateNote()">Create Note</button>
-            </div>
-        `;
+        const emptyState = createElementFromTemplate('empty-state-template');
+        emptyState.querySelector('.empty-title').textContent = 'No Notes Found';
+        emptyState.querySelector('.empty-description').textContent = 'Try adjusting your search or create a new note';
+        emptyState.querySelector('.create-note-btn').onclick = () => window.location.href = '/';
+        
+        container.innerHTML = '';
+        container.appendChild(emptyState);
         return;
     }
     
-            container.innerHTML = `
-            <div class="notes-grid">
-                ${notes.map(note => `
-                    <div class="note-card" onclick="selectNote('${note.note_id}')">
-                        <div class="note-header">
-                            <div>
-                                <div class="note-title">${escapeHtml(note.title)}</div>
-                                <div class="note-date">${formatDate(note.created_at)}</div>
-                            </div>
-                        </div>
-                        <div class="note-content">${escapeHtml(note.content.substring(0, 150))}${note.content.length > 150 ? '...' : ''}</div>
-                        <div class="note-tags">
-                            ${(note.tags || []).map(tag => `
-                                <span class="note-tag">${escapeHtml(tag)}</span>
-                            `).join('')}
-                        </div>
-                        <div class="note-actions">
-                            <button class="action-btn" onclick="deleteNote('${note.note_id}', event)">🗑️</button>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
+    const notesGrid = document.createElement('div');
+    notesGrid.className = 'notes-grid';
+    
+    notes.forEach(note => {
+        const noteCard = createElementFromTemplate('note-card-template');
+        
+        // Set content
+        noteCard.querySelector('.note-title').textContent = note.title;
+        noteCard.querySelector('.note-date').textContent = formatDate(note.created_at);
+        noteCard.querySelector('.note-content').textContent = note.content.substring(0, 150) + (note.content.length > 150 ? '...' : '');
+        
+        // Set up event handlers
+        noteCard.onclick = (event) => selectNote(note.note_id, event);
+        noteCard.querySelector('.delete-btn').onclick = (event) => deleteNote(note.note_id, event);
+        
+        // Handle tags
+        const tagsContainer = noteCard.querySelector('.note-tags');
+        if (note.tags && note.tags.length > 0) {
+            note.tags.forEach(tag => {
+                const tagSpan = document.createElement('span');
+                tagSpan.className = 'note-tag';
+                tagSpan.textContent = tag;
+                tagsContainer.appendChild(tagSpan);
+            });
+        }
+        
+        notesGrid.appendChild(noteCard);
+    });
+    
+    container.innerHTML = '';
+    container.appendChild(notesGrid);
 }
 
 function displayPopularTags() {
     const container = document.getElementById('popularTags');
     const popularTags = currentTags.slice(0, 10); // Show top 10 tags
     
-    container.innerHTML = popularTags.map(tag => `
-        <span class="filter-tag" onclick="filterByTag('${tag}')">${escapeHtml(tag)}</span>
-    `).join('');
+    container.innerHTML = '';
+    popularTags.forEach(tag => {
+        const tagSpan = document.createElement('span');
+        tagSpan.className = 'filter-tag';
+        tagSpan.textContent = tag;
+        tagSpan.onclick = (event) => filterByTag(tag, event);
+        container.appendChild(tagSpan);
+    });
 }
 
 function filterNotes(searchTerm) {
@@ -122,7 +192,7 @@ function filterNotes(searchTerm) {
     displayNotes(filteredNotes);
 }
 
-function filterByTag(tag) {
+function filterByTag(tag, event) {
     const filteredNotes = currentNotes.filter(note => 
         (note.tags || []).includes(tag)
     );
@@ -130,7 +200,9 @@ function filterByTag(tag) {
     
     // Update active state
     document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
-    event.target.classList.add('active');
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
 }
 
 async function deleteNote(noteId, event) {
@@ -141,23 +213,11 @@ async function deleteNote(noteId, event) {
 
 // Show delete confirmation modal
 function showDeleteConfirmModal(noteId) {
-    const modal = document.createElement('div');
-    modal.className = 'delete-modal';
-    modal.innerHTML = `
-        <div class="delete-content">
-            <div class="delete-header">
-                <h2>🗑️ Delete Note</h2>
-            </div>
-            <div class="delete-body">
-                <p>Are you sure you want to delete this note?</p>
-                <p class="delete-warning">This action cannot be undone.</p>
-            </div>
-            <div class="delete-footer">
-                <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
-                <button class="btn btn-danger" onclick="confirmDeleteNote('${noteId}')">Delete Note</button>
-            </div>
-        </div>
-    `;
+    const modal = createElementFromTemplate('delete-modal-template');
+    
+    // Set up event handlers
+    modal.querySelector('.cancel-btn').onclick = closeDeleteModal;
+    modal.querySelector('.confirm-btn').onclick = () => confirmDeleteNote(noteId);
     
     document.body.appendChild(modal);
     
@@ -209,14 +269,16 @@ async function confirmDeleteNote(noteId) {
     }
 }
 
-function selectNote(noteId) {
+function selectNote(noteId, event) {
     // Remove previous selection
     document.querySelectorAll('.note-card').forEach(card => {
         card.classList.remove('selected');
     });
     
     // Add selection to clicked card
-    event.currentTarget.classList.add('selected');
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('selected');
+    }
 }
 
 function showToast(message, type = 'success') {

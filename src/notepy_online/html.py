@@ -115,9 +115,111 @@ STATUS_PAGE = f"""
     <!-- Toast notifications -->
     <div class="toast-container" id="toastContainer"></div>
     
-    <script>
-        let currentNotes = [];
-        let currentTags = [];
+    <!-- HTML Templates for Status Page -->
+    <script type="text/template" id="note-card-template">
+        <div class="note-card">
+            <div class="note-header">
+                <div>
+                    <div class="note-title"></div>
+                    <div class="note-date"></div>
+                </div>
+            </div>
+            <div class="note-content"></div>
+            <div class="note-tags"></div>
+            <div class="note-actions">
+                <button class="action-btn delete-btn">🗑️</button>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/template" id="empty-state-template">
+        <div class="empty-state">
+            <div class="empty-icon">📝</div>
+            <div class="empty-title"></div>
+            <div class="empty-description"></div>
+            <button class="btn create-note-btn">Create Note</button>
+        </div>
+    </script>
+
+    <script type="text/template" id="delete-modal-template">
+        <div class="delete-modal">
+            <div class="delete-content">
+                <div class="delete-header">
+                    <h2>🗑️ Delete Note</h2>
+                </div>
+                <div class="delete-body">
+                    <p>Are you sure you want to delete this note?</p>
+                    <p class="delete-warning">This action cannot be undone.</p>
+                </div>
+                <div class="delete-footer">
+                    <button class="btn btn-secondary cancel-btn">Cancel</button>
+                    <button class="btn btn-danger confirm-btn">Delete Note</button>
+                </div>
+            </div>
+        </div>
+    </script>
+    
+         <script>
+         // Template utility functions - Retrieve templates from DOM
+         function getTemplate(templateId) {{
+             const templateElement = document.getElementById(templateId);
+             if (!templateElement) {{
+                 console.error(`Template '${{templateId}}' not found`);
+                 return null;
+             }}
+             return templateElement.textContent.trim();
+         }}
+         
+         function createElementFromTemplate(templateId, data = {{}}) {{
+             const template = getTemplate(templateId);
+             if (!template) {{
+                 return null;
+             }}
+             
+             const tempDiv = document.createElement('div');
+             tempDiv.innerHTML = template;
+             const element = tempDiv.firstElementChild;
+             
+             // Apply data to template
+             if (data) {{
+                 applyDataToElement(element, data);
+             }}
+             
+             return element;
+         }}
+         
+         function applyDataToElement(element, data) {{
+             // Apply text content to elements with data attributes
+             Object.keys(data).forEach(key => {{
+                 const targetElement = element.querySelector(`[data-${{key}}]`);
+                 if (targetElement) {{
+                     targetElement.textContent = data[key];
+                 }}
+             }});
+             
+             // Apply classes
+             if (data.classes) {{
+                 Object.keys(data.classes).forEach(key => {{
+                     const targetElement = element.querySelector(`[data-class-${{key}}]`);
+                     if (targetElement) {{
+                         targetElement.className = data.classes[key];
+                     }}
+                 }});
+             }}
+             
+             // Apply attributes
+             if (data.attributes) {{
+                 Object.keys(data.attributes).forEach(key => {{
+                     const targetElement = element.querySelector(`[data-attr-${{key}}]`);
+                     if (targetElement) {{
+                         targetElement.setAttribute(key, data.attributes[key]);
+                     }}
+                 }});
+             }}
+         }}
+         
+         let currentNotes = [];
+         let currentTags = [];
         
         // Load initial data
         document.addEventListener('DOMContentLoaded', function() {{
@@ -179,54 +281,66 @@ STATUS_PAGE = f"""
             }}
         }}
         
-        function displayNotes(notes) {{
-            const container = document.getElementById('notesContainer');
-            
-            if (notes.length === 0) {{
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">📝</div>
-                        <div class="empty-title">No Notes Found</div>
-                        <div class="empty-description">Try adjusting your search or create a new note</div>
-                        <button class="btn" onclick="showCreateNote()">Create Note</button>
-                    </div>
-                `;
-                return;
-            }}
-            
-            container.innerHTML = `
-                <div class="notes-grid">
-                    ${{notes.map(note => `
-                        <div class="note-card" onclick="selectNote('${{note.id}}')">
-                            <div class="note-header">
-                                <div>
-                                    <div class="note-title">${{escapeHtml(note.title)}}</div>
-                                    <div class="note-date">${{formatDate(note.created_at)}}</div>
-                                </div>
-                            </div>
-                            <div class="note-content">${{escapeHtml(note.content.substring(0, 150))}}${{note.content.length > 150 ? '...' : ''}}</div>
-                            <div class="note-tags">
-                                ${{(note.tags || []).map(tag => `
-                                    <span class="note-tag">${{escapeHtml(tag)}}</span>
-                                `).join('')}}
-                            </div>
-                            <div class="note-actions">
-                                <button class="action-btn" onclick="deleteNote('${{note.id}}', event)">🗑️</button>
-                            </div>
-                        </div>
-                    `).join('')}}
-                </div>
-            `;
-        }}
+                 function displayNotes(notes) {{
+             const container = document.getElementById('notesContainer');
+             
+             if (notes.length === 0) {{
+                 const emptyState = createElementFromTemplate('empty-state-template');
+                 emptyState.querySelector('.empty-title').textContent = 'No Notes Found';
+                 emptyState.querySelector('.empty-description').textContent = 'Try adjusting your search or create a new note';
+                 emptyState.querySelector('.create-note-btn').onclick = () => window.location.href = '/';
+                 
+                 container.innerHTML = '';
+                 container.appendChild(emptyState);
+                 return;
+             }}
+             
+             const notesGrid = document.createElement('div');
+             notesGrid.className = 'notes-grid';
+             
+             notes.forEach(note => {{
+                 const noteCard = createElementFromTemplate('note-card-template');
+                 
+                 // Set content
+                 noteCard.querySelector('.note-title').textContent = note.title;
+                 noteCard.querySelector('.note-date').textContent = formatDate(note.created_at);
+                 noteCard.querySelector('.note-content').textContent = note.content.substring(0, 150) + (note.content.length > 150 ? '...' : '');
+                 
+                 // Set up event handlers
+                 noteCard.onclick = () => selectNote(note.note_id);
+                 noteCard.querySelector('.delete-btn').onclick = (event) => deleteNote(note.note_id, event);
+                 
+                 // Handle tags
+                 const tagsContainer = noteCard.querySelector('.note-tags');
+                 if (note.tags && note.tags.length > 0) {{
+                     note.tags.forEach(tag => {{
+                         const tagSpan = document.createElement('span');
+                         tagSpan.className = 'note-tag';
+                         tagSpan.textContent = tag;
+                         tagsContainer.appendChild(tagSpan);
+                     }});
+                 }}
+                 
+                 notesGrid.appendChild(noteCard);
+             }});
+             
+             container.innerHTML = '';
+             container.appendChild(notesGrid);
+         }}
         
-        function displayPopularTags() {{
-            const container = document.getElementById('popularTags');
-            const popularTags = currentTags.slice(0, 10); // Show top 10 tags
-            
-            container.innerHTML = popularTags.map(tag => `
-                <span class="filter-tag" onclick="filterByTag('${{tag}}')">${{escapeHtml(tag)}}</span>
-            `).join('');
-        }}
+                 function displayPopularTags() {{
+             const container = document.getElementById('popularTags');
+             const popularTags = currentTags.slice(0, 10); // Show top 10 tags
+             
+             container.innerHTML = '';
+             popularTags.forEach(tag => {{
+                 const tagSpan = document.createElement('span');
+                 tagSpan.className = 'filter-tag';
+                 tagSpan.textContent = tag;
+                 tagSpan.onclick = () => filterByTag(tag);
+                 container.appendChild(tagSpan);
+             }});
+         }}
         
         function filterNotes(searchTerm) {{
             const filteredNotes = currentNotes.filter(note => {{
@@ -261,32 +375,69 @@ STATUS_PAGE = f"""
         
 
         
-        async function deleteNote(noteId, event) {{
-            event.stopPropagation();
-            
-            if (!confirm('Are you sure you want to delete this note?')) {{
-                return;
-            }}
-            
-            try {{
-                const response = await fetch(`/api/notes/${{noteId}}`, {{
-                    method: 'DELETE'
-                }});
-                
-                if (response.ok) {{
-                    showToast('Note deleted successfully');
-                    loadNotes();
-                    loadTags();
-                    loadStats();
-                }} else {{
-                    const error = await response.json();
-                    showToast('Error: ' + (error.error || 'Unknown error'), 'error');
-                }}
-            }} catch (error) {{
-                console.error('Error deleting note:', error);
-                showToast('Error deleting note', 'error');
-            }}
-        }}
+                 async function deleteNote(noteId, event) {{
+             event.stopPropagation();
+             
+             showDeleteConfirmModal(noteId);
+         }}
+         
+         // Show delete confirmation modal
+         function showDeleteConfirmModal(noteId) {{
+             const modal = createElementFromTemplate('delete-modal-template');
+             
+             // Set up event handlers
+             modal.querySelector('.cancel-btn').onclick = closeDeleteModal;
+             modal.querySelector('.confirm-btn').onclick = () => confirmDeleteNote(noteId);
+             
+             document.body.appendChild(modal);
+             
+             // Close modal when clicking outside
+             modal.addEventListener('click', function(e) {{
+                 if (e.target === modal) {{
+                     closeDeleteModal();
+                 }}
+             }});
+             
+             // Close modal with ESC key
+             document.addEventListener('keydown', function handleEsc(e) {{
+                 if (e.key === 'Escape') {{
+                     closeDeleteModal();
+                     document.removeEventListener('keydown', handleEsc);
+                 }}
+             }});
+         }}
+         
+         // Close delete modal
+         function closeDeleteModal() {{
+             const modal = document.querySelector('.delete-modal');
+             if (modal) {{
+                 modal.remove();
+             }}
+         }}
+         
+         // Confirm delete note
+         async function confirmDeleteNote(noteId) {{
+             try {{
+                 const response = await fetch(`/api/notes/${{noteId}}`, {{
+                     method: 'DELETE'
+                 }});
+                 
+                 if (response.ok) {{
+                     showToast('Note deleted successfully');
+                     loadNotes();
+                     loadTags();
+                     loadStats();
+                 }} else {{
+                     const error = await response.json();
+                     showToast('Error: ' + (error.error || 'Unknown error'), 'error');
+                 }}
+             }} catch (error) {{
+                 console.error('Error deleting note:', error);
+                 showToast('Error deleting note', 'error');
+             }} finally {{
+                 closeDeleteModal();
+             }}
+         }}
         
         function selectNote(noteId) {{
             // Remove previous selection
@@ -609,6 +760,47 @@ MAIN_PAGE = """
                     <button class="btn btn-secondary cancel-btn">Cancel</button>
                     <button class="btn import-btn" disabled>Import Notes</button>
                 </div>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/template" id="search-history-dropdown-template">
+        <div class="search-history-dropdown">
+            <div class="search-history-header">
+                <span>Recent Searches</span>
+                <button class="clear-history-btn">Clear</button>
+            </div>
+            <div class="search-history-items"></div>
+        </div>
+    </script>
+
+    <script type="text/template" id="search-history-item-template">
+        <div class="search-history-item">
+            <span class="search-term"></span>
+            <button class="remove-history-btn">×</button>
+        </div>
+    </script>
+
+    <script type="text/template" id="tag-filter-template">
+        <span class="tag-filter">
+            <span class="tag-name"></span>
+            <span class="tag-filter-count"></span>
+        </span>
+    </script>
+
+    <script type="text/template" id="current-tag-template">
+        <span class="current-tag">
+            <span class="tag-text"></span>
+            <button class="remove-tag">×</button>
+        </span>
+    </script>
+
+    <script type="text/template" id="import-preview-item-template">
+        <div class="import-preview-item">
+            <div class="import-preview-title"></div>
+            <div class="import-preview-meta">
+                <span class="import-preview-tags"></span>
+                <span class="import-preview-content-length"></span>
             </div>
         </div>
     </script>

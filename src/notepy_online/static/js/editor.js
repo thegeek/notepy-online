@@ -395,13 +395,18 @@ async function loadTags() {
 function displayNotes(notes) {
     const container = document.getElementById('notesList');
     
+    // Clear the container
+    container.innerHTML = '';
+    
     // Always show "New Note" option first
-    let html = `
-        <div class="note-item" onclick="createNewNote()">
-            <div class="note-item-title">➕ New Note</div>
-            <div class="note-item-preview">Create a new note</div>
-        </div>
+    const newNoteItem = document.createElement('div');
+    newNoteItem.className = 'note-item';
+    newNoteItem.onclick = createNewNote;
+    newNoteItem.innerHTML = `
+        <div class="note-item-title">➕ New Note</div>
+        <div class="note-item-preview">Create a new note</div>
     `;
+    container.appendChild(newNoteItem);
     
     // Separate pinned and unpinned notes
     const pinnedNotes = notes.filter(note => note.pinned);
@@ -409,37 +414,35 @@ function displayNotes(notes) {
     
     // Add pinned notes first
     if (pinnedNotes.length > 0) {
-        html += `
-            <div class="notes-section-header">
-                <span>📌 Pinned Notes</span>
-            </div>
-        `;
+        const pinnedHeader = document.createElement('div');
+        pinnedHeader.className = 'notes-section-header';
+        pinnedHeader.innerHTML = '<span>📌 Pinned Notes</span>';
+        container.appendChild(pinnedHeader);
         
         pinnedNotes.forEach(note => {
-            html += createNoteItemHTML(note);
+            const noteElement = createNoteItemElement(note);
+            container.appendChild(noteElement);
         });
     }
     
     // Add unpinned notes
     if (unpinnedNotes.length > 0) {
         if (pinnedNotes.length > 0) {
-            html += `
-                <div class="notes-section-header">
-                    <span>📝 All Notes</span>
-                </div>
-            `;
+            const unpinnedHeader = document.createElement('div');
+            unpinnedHeader.className = 'notes-section-header';
+            unpinnedHeader.innerHTML = '<span>📝 All Notes</span>';
+            container.appendChild(unpinnedHeader);
         }
         
         unpinnedNotes.forEach(note => {
-            html += createNoteItemHTML(note);
+            const noteElement = createNoteItemElement(note);
+            container.appendChild(noteElement);
         });
     }
-    
-    container.innerHTML = html;
 }
 
-// Create note item HTML using template
-function createNoteItemHTML(note) {
+// Create note item element using template
+function createNoteItemElement(note) {
     const isActive = note.note_id === currentNoteId;
     const preview = note.content.replace(/<[^>]*>/g, '').substring(0, 100) + (note.content.length > 100 ? '...' : '');
     const date = new Date(note.created_at).toLocaleDateString();
@@ -458,7 +461,7 @@ function createNoteItemHTML(note) {
     if (note.pinned) noteElement.classList.add('pinned');
     
     // Set onclick handler
-    noteElement.onclick = () => selectNote(note.note_id);
+    noteElement.onclick = (event) => selectNote(note.note_id, event);
     
     // Handle tags
     const tagsContainer = noteElement.querySelector('.note-item-tags');
@@ -489,7 +492,12 @@ function createNoteItemHTML(note) {
     
     deleteBtn.onclick = (event) => deleteNote(note.note_id, event);
     
-    return noteElement.outerHTML;
+    return noteElement;
+}
+
+// Create note item HTML using template (for backward compatibility)
+function createNoteItemHTML(note) {
+    return createNoteItemElement(note).outerHTML;
 }
 
 // Enhanced filtering with multiple criteria and search operators
@@ -691,16 +699,22 @@ function displayTagFilters() {
         return;
     }
     
-    container.innerHTML = currentTags.map(tag => {
+    container.innerHTML = '';
+    currentTags.forEach(tag => {
         const noteCount = currentNotes.filter(note => (note.tags || []).includes(tag)).length;
         const isActive = searchFilters.selectedTags.includes(tag);
-        return `
-            <span class="tag-filter ${isActive ? 'active' : ''}" onclick="toggleTagFilter('${tag}')">
-                ${escapeHtml(tag)}
-                <span class="tag-filter-count">${noteCount}</span>
-            </span>
-        `;
-    }).join('');
+        
+        const tagFilter = createElementFromTemplate('tag-filter-template');
+        tagFilter.querySelector('.tag-name').textContent = tag;
+        tagFilter.querySelector('.tag-filter-count').textContent = noteCount;
+        
+        if (isActive) {
+            tagFilter.classList.add('active');
+        }
+        
+        tagFilter.onclick = () => toggleTagFilter(tag);
+        container.appendChild(tagFilter);
+    });
 }
 
 // Toggle tag filter
@@ -763,8 +777,7 @@ function showSearchHistory() {
     
     if (searchHistory.length === 0) return;
     
-    const dropdown = document.createElement('div');
-    dropdown.className = 'search-history-dropdown';
+    const dropdown = createElementFromTemplate('search-history-dropdown-template');
     dropdown.style.cssText = `
         position: absolute;
         top: ${rect.bottom + 5}px;
@@ -779,18 +792,18 @@ function showSearchHistory() {
         overflow-y: auto;
     `;
     
-    dropdown.innerHTML = `
-        <div class="search-history-header">
-            <span>Recent Searches</span>
-            <button onclick="clearSearchHistory()" class="clear-history-btn">Clear</button>
-        </div>
-        ${searchHistory.map(term => `
-            <div class="search-history-item" onclick="useSearchTerm('${term}')">
-                <span>${escapeHtml(term)}</span>
-                <button onclick="removeFromSearchHistory('${term}', event)" class="remove-history-btn">×</button>
-            </div>
-        `).join('')}
-    `;
+    // Set up event handlers
+    dropdown.querySelector('.clear-history-btn').onclick = clearSearchHistory;
+    
+    // Add search history items
+    const itemsContainer = dropdown.querySelector('.search-history-items');
+    searchHistory.forEach(term => {
+        const item = createElementFromTemplate('search-history-item-template');
+        item.querySelector('.search-term').textContent = term;
+        item.onclick = () => useSearchTerm(term);
+        item.querySelector('.remove-history-btn').onclick = (event) => removeFromSearchHistory(term, event);
+        itemsContainer.appendChild(item);
+    });
     
     document.body.appendChild(dropdown);
     
@@ -948,7 +961,7 @@ async function confirmDeleteNote(noteId) {
 }
 
 // Enhanced note selection with tag management
-function selectNote(noteId) {
+function selectNote(noteId, event) {
     const note = currentNotes.find(n => n.note_id === noteId);
     if (!note) return;
     
@@ -968,7 +981,9 @@ function selectNote(noteId) {
     document.querySelectorAll('.note-item').forEach(item => {
         item.classList.remove('active');
     });
-    event.currentTarget.classList.add('active');
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    }
     
     // Update word count and last saved
     updateWordCount();
@@ -1000,12 +1015,14 @@ function createNewNote() {
 // Display current note tags
 function displayCurrentTags(tags) {
     const container = document.getElementById('currentTags');
-    container.innerHTML = tags.map(tag => `
-        <span class="current-tag">
-            ${escapeHtml(tag)}
-            <button class="remove-tag" onclick="removeTagFromNote('${tag}')">×</button>
-        </span>
-    `).join('');
+    container.innerHTML = '';
+    
+    tags.forEach(tag => {
+        const tagElement = createElementFromTemplate('current-tag-template');
+        tagElement.querySelector('.tag-text').textContent = tag;
+        tagElement.querySelector('.remove-tag').onclick = () => removeTagFromNote(tag);
+        container.appendChild(tagElement);
+    });
 }
 
 // Add tag to current note
@@ -1299,11 +1316,24 @@ function setEditableTitle(title) {
         return;
     }
     
-    titleElement.innerHTML = `
-        <span class="title-text" onclick="startTitleEdit()">${escapeHtml(title)}</span>
-        <input type="text" class="title-input" value="${escapeHtml(title)}" style="display: none;" 
-               onblur="saveTitleEdit()" onkeydown="handleTitleKeydown(event)">
-    `;
+    // Create title text span
+    const titleText = document.createElement('span');
+    titleText.className = 'title-text';
+    titleText.textContent = title;
+    titleText.onclick = startTitleEdit;
+    
+    // Create title input
+    const titleInput = document.createElement('input');
+    titleInput.type = 'text';
+    titleInput.className = 'title-input';
+    titleInput.value = title;
+    titleInput.style.display = 'none';
+    titleInput.onblur = saveTitleEdit;
+    titleInput.onkeydown = handleTitleKeydown;
+    
+    titleElement.innerHTML = '';
+    titleElement.appendChild(titleText);
+    titleElement.appendChild(titleInput);
 }
 
 // Start title editing
@@ -1625,32 +1655,31 @@ function showImportPreview(notes) {
     const preview = document.getElementById('importPreview');
     const content = document.getElementById('importPreviewContent');
     
-    const previewItems = notes.map(note => {
-        let tagsHtml = '';
+    // Create preview list container
+    const previewList = document.createElement('div');
+    previewList.className = 'import-preview-list';
+    
+    notes.forEach(note => {
+        const previewItem = createElementFromTemplate('import-preview-item-template');
+        previewItem.querySelector('.import-preview-title').textContent = note.title;
+        previewItem.querySelector('.import-preview-content-length').textContent = `${note.content ? note.content.length : 0} characters`;
+        
         if (note.tags && note.tags.length > 0) {
-            const tagsText = note.tags.map(tag => escapeHtml(tag)).join(', ');
-            tagsHtml = `<span class="import-preview-tags">${tagsText}</span>`;
+            const tagsText = note.tags.join(', ');
+            previewItem.querySelector('.import-preview-tags').textContent = tagsText;
         }
         
-        return `
-            <div class="import-preview-item">
-                <div class="import-preview-title">${escapeHtml(note.title)}</div>
-                <div class="import-preview-meta">
-                    ${tagsHtml}
-                    <span class="import-preview-content-length">${note.content ? note.content.length : 0} characters</span>
-                </div>
-            </div>
-        `;
-    }).join('');
+        previewList.appendChild(previewItem);
+    });
     
-    content.innerHTML = `
-        <div class="import-preview-list">
-            ${previewItems}
-        </div>
-        <div class="import-preview-summary">
-            <strong>${notes.length}</strong> notes ready to import
-        </div>
-    `;
+    // Create summary
+    const summary = document.createElement('div');
+    summary.className = 'import-preview-summary';
+    summary.innerHTML = `<strong>${notes.length}</strong> notes ready to import`;
+    
+    content.innerHTML = '';
+    content.appendChild(previewList);
+    content.appendChild(summary);
     
     preview.style.display = 'block';
 }
