@@ -1,5 +1,63 @@
 // Enhanced Editor JavaScript for Notepy Online - Phase 1
 
+// Template utility functions - Retrieve templates from DOM
+function getTemplate(templateId) {
+    const templateElement = document.getElementById(templateId);
+    if (!templateElement) {
+        console.error(`Template '${templateId}' not found`);
+        return null;
+    }
+    return templateElement.textContent.trim();
+}
+
+function createElementFromTemplate(templateId, data = {}) {
+    const template = getTemplate(templateId);
+    if (!template) {
+        return null;
+    }
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = template;
+    const element = tempDiv.firstElementChild;
+    
+    // Apply data to template
+    if (data) {
+        applyDataToElement(element, data);
+    }
+    
+    return element;
+}
+
+function applyDataToElement(element, data) {
+    // Apply text content to elements with data attributes
+    Object.keys(data).forEach(key => {
+        const targetElement = element.querySelector(`[data-${key}]`);
+        if (targetElement) {
+            targetElement.textContent = data[key];
+        }
+    });
+    
+    // Apply classes
+    if (data.classes) {
+        Object.keys(data.classes).forEach(key => {
+            const targetElement = element.querySelector(`[data-class-${key}]`);
+            if (targetElement) {
+                targetElement.className = data.classes[key];
+            }
+        });
+    }
+    
+    // Apply attributes
+    if (data.attributes) {
+        Object.keys(data.attributes).forEach(key => {
+            const targetElement = element.querySelector(`[data-attr-${key}]`);
+            if (targetElement) {
+                targetElement.setAttribute(key, data.attributes[key]);
+            }
+        });
+    }
+}
+
 let currentNotes = [];
 let currentNoteId = null;
 let currentTags = [];
@@ -380,40 +438,58 @@ function displayNotes(notes) {
     container.innerHTML = html;
 }
 
-// Create note item HTML
+// Create note item HTML using template
 function createNoteItemHTML(note) {
     const isActive = note.note_id === currentNoteId;
     const preview = note.content.replace(/<[^>]*>/g, '').substring(0, 100) + (note.content.length > 100 ? '...' : '');
     const date = new Date(note.created_at).toLocaleDateString();
     const updatedDate = new Date(note.updated_at).toLocaleDateString();
     
-    let tagsHtml = '';
+    // Create element from template
+    const noteElement = createElementFromTemplate('note-item-template');
+    
+    // Set content
+    noteElement.querySelector('.note-item-title').textContent = note.title;
+    noteElement.querySelector('.note-item-preview').textContent = preview;
+    noteElement.querySelector('.note-item-date').textContent = `Created: ${date} | Updated: ${updatedDate}`;
+    
+    // Set classes
+    if (isActive) noteElement.classList.add('active');
+    if (note.pinned) noteElement.classList.add('pinned');
+    
+    // Set onclick handler
+    noteElement.onclick = () => selectNote(note.note_id);
+    
+    // Handle tags
+    const tagsContainer = noteElement.querySelector('.note-item-tags');
     if (note.tags && note.tags.length > 0) {
-        const tagSpans = note.tags.slice(0, 3).map(tag => 
-            `<span class="note-item-tag">${escapeHtml(tag)}</span>`
-        ).join('');
-        const moreTags = note.tags.length > 3 ? `<span class="note-item-tag">+${note.tags.length - 3}</span>` : '';
-        tagsHtml = `<div class="note-item-tags">${tagSpans}${moreTags}</div>`;
+        const tagSpans = note.tags.slice(0, 3).map(tag => {
+            const span = document.createElement('span');
+            span.className = 'note-item-tag';
+            span.textContent = tag;
+            return span;
+        });
+        tagSpans.forEach(span => tagsContainer.appendChild(span));
+        
+        if (note.tags.length > 3) {
+            const moreSpan = document.createElement('span');
+            moreSpan.className = 'note-item-tag';
+            moreSpan.textContent = `+${note.tags.length - 3}`;
+            tagsContainer.appendChild(moreSpan);
+        }
     }
     
-    return `
-        <div class="note-item ${isActive ? 'active' : ''} ${note.pinned ? 'pinned' : ''}" onclick="selectNote('${note.note_id}')">
-            <div class="note-item-header">
-                <div class="note-item-title">${escapeHtml(note.title)}</div>
-                <div class="note-item-actions">
-                    <button class="note-action-btn" onclick="togglePinNote('${note.note_id}', event)" title="${note.pinned ? 'Unpin' : 'Pin'}">
-                        ${note.pinned ? '📌' : '📍'}
-                    </button>
-                    <button class="note-action-btn" onclick="deleteNote('${note.note_id}', event)" title="Delete">
-                        🗑️
-                    </button>
-                </div>
-            </div>
-            <div class="note-item-preview">${escapeHtml(preview)}</div>
-            <div class="note-item-date">Created: ${date} | Updated: ${updatedDate}</div>
-            ${tagsHtml}
-        </div>
-    `;
+    // Set up action buttons
+    const pinBtn = noteElement.querySelector('.pin-btn');
+    const deleteBtn = noteElement.querySelector('.delete-btn');
+    
+    pinBtn.onclick = (event) => togglePinNote(note.note_id, event);
+    pinBtn.title = note.pinned ? 'Unpin' : 'Pin';
+    pinBtn.textContent = note.pinned ? '📌' : '📍';
+    
+    deleteBtn.onclick = (event) => deleteNote(note.note_id, event);
+    
+    return noteElement.outerHTML;
 }
 
 // Enhanced filtering with multiple criteria and search operators
@@ -809,23 +885,11 @@ async function deleteNote(noteId, event) {
 
 // Show delete confirmation modal
 function showDeleteConfirmModal(noteId) {
-    const modal = document.createElement('div');
-    modal.className = 'delete-modal';
-    modal.innerHTML = `
-        <div class="delete-content">
-            <div class="delete-header">
-                <h2>🗑️ Delete Note</h2>
-            </div>
-            <div class="delete-body">
-                <p>Are you sure you want to delete this note?</p>
-                <p class="delete-warning">This action cannot be undone.</p>
-            </div>
-            <div class="delete-footer">
-                <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
-                <button class="btn btn-danger" onclick="confirmDeleteNote('${noteId}')">Delete Note</button>
-            </div>
-        </div>
-    `;
+    const modal = createElementFromTemplate('delete-modal-template');
+    
+    // Set up event handlers
+    modal.querySelector('.cancel-btn').onclick = closeDeleteModal;
+    modal.querySelector('.confirm-btn').onclick = () => confirmDeleteNote(noteId);
     
     document.body.appendChild(modal);
     
@@ -1336,81 +1400,12 @@ function handleTitleKeydown(event) {
 
 // Show keyboard shortcuts help modal
 function showKeyboardShortcuts() {
-    const modal = document.createElement('div');
-    modal.className = 'shortcuts-modal';
-    modal.innerHTML = `
-        <div class="shortcuts-content">
-            <div class="shortcuts-header">
-                <h2>⌨️ Keyboard Shortcuts</h2>
-                <button class="close-btn" onclick="closeShortcutsModal()">×</button>
-            </div>
-            <div class="shortcuts-grid">
-                <div class="shortcut-group">
-                    <h3>📝 Note Management</h3>
-                    <div class="shortcut-item">
-                        <kbd>Ctrl+N</kbd>
-                        <span>New Note</span>
-                    </div>
-                    <div class="shortcut-item">
-                        <kbd>Ctrl+S</kbd>
-                        <span>Save Note</span>
-                    </div>
-                    <div class="shortcut-item">
-                        <kbd>Ctrl+Shift+S</kbd>
-                        <span>Save As</span>
-                    </div>
-                </div>
-                <div class="shortcut-group">
-                    <h3>🔍 Search & Navigation</h3>
-                    <div class="shortcut-item">
-                        <kbd>Ctrl+F</kbd>
-                        <span>Search Notes</span>
-                    </div>
-                    <div class="shortcut-item">
-                        <kbd>Ctrl+Shift+O</kbd>
-                        <span>Open Note</span>
-                    </div>
-                    <div class="shortcut-item">
-                        <kbd>Ctrl+Shift+H</kbd>
-                        <span>Go to Status</span>
-                    </div>
-                </div>
-                <div class="shortcut-group">
-                    <h3>📄 Editor Formatting</h3>
-                    <div class="shortcut-item">
-                        <kbd>Ctrl+B</kbd>
-                        <span>Bold</span>
-                    </div>
-                    <div class="shortcut-item">
-                        <kbd>Ctrl+I</kbd>
-                        <span>Italic</span>
-                    </div>
-                    <div class="shortcut-item">
-                        <kbd>Ctrl+U</kbd>
-                        <span>Underline</span>
-                    </div>
-                    <div class="shortcut-item">
-                        <kbd>Ctrl+K</kbd>
-                        <span>Insert Link</span>
-                    </div>
-                </div>
-                <div class="shortcut-group">
-                    <h3>🖥️ View</h3>
-                    <div class="shortcut-item">
-                        <kbd>Ctrl+Shift+F</kbd>
-                        <span>Toggle Fullscreen</span>
-                    </div>
-                    <div class="shortcut-item">
-                        <kbd>Esc</kbd>
-                        <span>Exit Fullscreen</span>
-                    </div>
-                </div>
-            </div>
-            <div class="shortcuts-footer">
-                <button class="btn" onclick="closeShortcutsModal()">Close</button>
-            </div>
-        </div>
-    `;
+    const modal = createElementFromTemplate('keyboard-shortcuts-template');
+    
+    // Set up event handlers
+    modal.querySelectorAll('.close-btn').forEach(btn => {
+        btn.onclick = closeShortcutsModal;
+    });
     
     document.body.appendChild(modal);
     
@@ -1432,35 +1427,23 @@ function closeShortcutsModal() {
 
 // Show export menu
 function showExportMenu() {
-    const modal = document.createElement('div');
-    modal.className = 'export-modal';
-    modal.innerHTML = `
-        <div class="export-content">
-            <div class="export-header">
-                <h2>📤 Export Options</h2>
-                <button class="close-btn" onclick="closeExportModal()">×</button>
-            </div>
-            <div class="export-options">
-                <div class="export-section">
-                    <h3>Export All Notes</h3>
-                    <div class="export-buttons">
-                        <button class="btn btn-secondary" onclick="exportAllNotes('json')">📄 Export as JSON</button>
-                        <button class="btn btn-secondary" onclick="exportAllNotes('markdown')">📝 Export as Markdown</button>
-                    </div>
-                </div>
-                <div class="export-section">
-                    <h3>Export Current Note</h3>
-                    <div class="export-buttons">
-                        <button class="btn btn-secondary" onclick="exportCurrentNote('json')" ${!currentNoteId ? 'disabled' : ''}>📄 Export as JSON</button>
-                        <button class="btn btn-secondary" onclick="exportCurrentNote('markdown')" ${!currentNoteId ? 'disabled' : ''}>📝 Export as Markdown</button>
-                    </div>
-                </div>
-            </div>
-            <div class="export-footer">
-                <button class="btn" onclick="closeExportModal()">Close</button>
-            </div>
-        </div>
-    `;
+    const modal = createElementFromTemplate('export-modal-template');
+    
+    // Set up event handlers
+    modal.querySelectorAll('.close-btn').forEach(btn => {
+        btn.onclick = closeExportModal;
+    });
+    
+    modal.querySelector('.export-all-json').onclick = () => exportAllNotes('json');
+    modal.querySelector('.export-all-markdown').onclick = () => exportAllNotes('markdown');
+    modal.querySelector('.export-current-json').onclick = () => exportCurrentNote('json');
+    modal.querySelector('.export-current-markdown').onclick = () => exportCurrentNote('markdown');
+    
+    // Disable current note export buttons if no note is selected
+    if (!currentNoteId) {
+        modal.querySelector('.export-current-json').disabled = true;
+        modal.querySelector('.export-current-markdown').disabled = true;
+    }
     
     document.body.appendChild(modal);
     
@@ -1561,34 +1544,19 @@ async function exportCurrentNote(format) {
 
 // Show import dialog
 function showImportDialog() {
-    const modal = document.createElement('div');
-    modal.className = 'import-modal';
-    modal.innerHTML = `
-        <div class="import-content">
-            <div class="import-header">
-                <h2>📥 Import Notes</h2>
-                <button class="close-btn" onclick="closeImportModal()">×</button>
-            </div>
-            <div class="import-body">
-                <p>Select a JSON file exported from Notepy Online to import notes.</p>
-                <div class="file-input-container">
-                    <input type="file" id="importFile" accept=".json" onchange="handleImportFile(event)">
-                    <label for="importFile" class="file-input-label">
-                        <span>📁 Choose File</span>
-                        <span class="file-input-hint">or drag and drop here</span>
-                    </label>
-                </div>
-                <div id="importPreview" style="display: none;">
-                    <h4>Preview:</h4>
-                    <div id="importPreviewContent"></div>
-                </div>
-            </div>
-            <div class="import-footer">
-                <button class="btn btn-secondary" onclick="closeImportModal()">Cancel</button>
-                <button class="btn" id="importBtn" onclick="importNotes()" disabled>Import Notes</button>
-            </div>
-        </div>
-    `;
+    const modal = createElementFromTemplate('import-modal-template');
+    
+    // Set up event handlers
+    modal.querySelectorAll('.close-btn').forEach(btn => {
+        btn.onclick = closeImportModal;
+    });
+    
+    modal.querySelector('.cancel-btn').onclick = closeImportModal;
+    modal.querySelector('.import-btn').onclick = importNotes;
+    
+    // Set up file input change handler
+    const fileInput = modal.querySelector('#importFile');
+    fileInput.onchange = handleImportFile;
     
     document.body.appendChild(modal);
     
@@ -1600,7 +1568,6 @@ function showImportDialog() {
     });
     
     // Drag and drop functionality
-    const fileInput = modal.querySelector('#importFile');
     const label = modal.querySelector('.file-input-label');
     
     label.addEventListener('dragover', (e) => {

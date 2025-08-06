@@ -444,6 +444,175 @@ MAIN_PAGE = """
     <!-- Toast notifications -->
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- HTML Templates -->
+    <script type="text/template" id="note-item-template">
+        <div class="note-item">
+            <div class="note-item-header">
+                <div class="note-item-title"></div>
+                <div class="note-item-actions">
+                    <button class="note-action-btn pin-btn" title="Pin/Unpin">📍</button>
+                    <button class="note-action-btn delete-btn" title="Delete">🗑️</button>
+                </div>
+            </div>
+            <div class="note-item-preview"></div>
+            <div class="note-item-date"></div>
+            <div class="note-item-tags"></div>
+        </div>
+    </script>
+
+    <script type="text/template" id="delete-modal-template">
+        <div class="delete-modal">
+            <div class="delete-content">
+                <div class="delete-header">
+                    <h2>🗑️ Delete Note</h2>
+                </div>
+                <div class="delete-body">
+                    <p>Are you sure you want to delete this note?</p>
+                    <p class="delete-warning">This action cannot be undone.</p>
+                </div>
+                <div class="delete-footer">
+                    <button class="btn btn-secondary cancel-btn">Cancel</button>
+                    <button class="btn btn-danger confirm-btn">Delete Note</button>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/template" id="keyboard-shortcuts-template">
+        <div class="shortcuts-modal">
+            <div class="shortcuts-content">
+                <div class="shortcuts-header">
+                    <h2>⌨️ Keyboard Shortcuts</h2>
+                    <button class="close-btn">×</button>
+                </div>
+                <div class="shortcuts-grid">
+                    <div class="shortcut-group">
+                        <h3>📝 Note Management</h3>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+N</kbd>
+                            <span>New Note</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+S</kbd>
+                            <span>Save Note</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+Shift+S</kbd>
+                            <span>Save As</span>
+                        </div>
+                    </div>
+                    <div class="shortcut-group">
+                        <h3>🔍 Search & Navigation</h3>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+F</kbd>
+                            <span>Search Notes</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+Shift+O</kbd>
+                            <span>Open Note</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+Shift+H</kbd>
+                            <span>Go to Status</span>
+                        </div>
+                    </div>
+                    <div class="shortcut-group">
+                        <h3>📄 Editor Formatting</h3>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+B</kbd>
+                            <span>Bold</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+I</kbd>
+                            <span>Italic</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+U</kbd>
+                            <span>Underline</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+K</kbd>
+                            <span>Insert Link</span>
+                        </div>
+                    </div>
+                    <div class="shortcut-group">
+                        <h3>🖥️ View</h3>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+Shift+F</kbd>
+                            <span>Toggle Fullscreen</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Esc</kbd>
+                            <span>Exit Fullscreen</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="shortcuts-footer">
+                    <button class="btn close-btn">Close</button>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/template" id="export-modal-template">
+        <div class="export-modal">
+            <div class="export-content">
+                <div class="export-header">
+                    <h2>📤 Export Options</h2>
+                    <button class="close-btn">×</button>
+                </div>
+                <div class="export-options">
+                    <div class="export-section">
+                        <h3>Export All Notes</h3>
+                        <div class="export-buttons">
+                            <button class="btn btn-secondary export-all-json">📄 Export as JSON</button>
+                            <button class="btn btn-secondary export-all-markdown">📝 Export as Markdown</button>
+                        </div>
+                    </div>
+                    <div class="export-section">
+                        <h3>Export Current Note</h3>
+                        <div class="export-buttons">
+                            <button class="btn btn-secondary export-current-json" disabled>📄 Export as JSON</button>
+                            <button class="btn btn-secondary export-current-markdown" disabled>📝 Export as Markdown</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="export-footer">
+                    <button class="btn close-btn">Close</button>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/template" id="import-modal-template">
+        <div class="import-modal">
+            <div class="import-content">
+                <div class="import-header">
+                    <h2>📥 Import Notes</h2>
+                    <button class="close-btn">×</button>
+                </div>
+                <div class="import-body">
+                    <p>Select a JSON file exported from Notepy Online to import notes.</p>
+                    <div class="file-input-container">
+                        <input type="file" id="importFile" accept=".json">
+                        <label for="importFile" class="file-input-label">
+                            <span>📁 Choose File</span>
+                            <span class="file-input-hint">or drag and drop here</span>
+                        </label>
+                    </div>
+                    <div id="importPreview" style="display: none;">
+                        <h4>Preview:</h4>
+                        <div id="importPreviewContent"></div>
+                    </div>
+                </div>
+                <div class="import-footer">
+                    <button class="btn btn-secondary cancel-btn">Cancel</button>
+                    <button class="btn import-btn" disabled>Import Notes</button>
+                </div>
+            </div>
+        </div>
+    </script>
+
     <script src="/static/js/editor.js"></script>
 </body>
 </html>
