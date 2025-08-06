@@ -23,7 +23,8 @@ function initializeEditor() {
     }
     
     console.log('Quill library is available, initializing editor...');
-    // Enhanced Quill toolbar with more formatting options
+    
+    // Enhanced Quill toolbar with more formatting options (without table for now)
     const toolbarOptions = [
         ['bold', 'italic', 'underline', 'strike'],
         ['blockquote', 'code-block'],
@@ -38,8 +39,7 @@ function initializeEditor() {
         [{ 'font': [] }],
         [{ 'align': [] }],
         ['clean'],
-        ['link', 'image', 'video'],
-        ['table']
+        ['link', 'image', 'video']
     ];
 
     // Initialize Quill with enhanced configuration and error handling
@@ -61,7 +61,6 @@ function initializeEditor() {
             theme: 'snow',
             modules: {
                 toolbar: toolbarOptions,
-                table: true,
                 keyboard: {
                     bindings: {
                         tab: {
