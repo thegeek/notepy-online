@@ -14,7 +14,15 @@ let searchFilters = {
 let searchHistory = JSON.parse(localStorage.getItem('notepy_search_history') || '[]');
 
 // Initialize Quill.js with enhanced features
-document.addEventListener('DOMContentLoaded', function() {
+// Move initializeEditor function to global scope
+function initializeEditor() {
+    if (typeof Quill === 'undefined') {
+        console.log('Quill not ready yet, retrying in 100ms...');
+        setTimeout(initializeEditor, 100);
+        return;
+    }
+    
+    console.log('Quill library is available, initializing editor...');
     // Enhanced Quill toolbar with more formatting options
     const toolbarOptions = [
         ['bold', 'italic', 'underline', 'strike'],
@@ -34,26 +42,50 @@ document.addEventListener('DOMContentLoaded', function() {
         ['table']
     ];
 
-    // Initialize Quill with enhanced configuration
-    editor = new Quill('#editor', {
-        theme: 'snow',
-        modules: {
-            toolbar: toolbarOptions,
-            table: true,
-            keyboard: {
-                bindings: {
-                    tab: {
-                        key: 9,
-                        handler: function() {
-                            return true;
+    // Initialize Quill with enhanced configuration and error handling
+    try {
+        if (typeof Quill === 'undefined') {
+            console.error('Quill library not loaded');
+            showToast('Editor library failed to load. Please refresh the page.', 'error');
+            return;
+        }
+        
+        const editorElement = document.getElementById('editor');
+        if (!editorElement) {
+            console.error('Editor element not found');
+            showToast('Editor element not found. Please refresh the page.', 'error');
+            return;
+        }
+        
+        editor = new Quill('#editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: toolbarOptions,
+                table: true,
+                keyboard: {
+                    bindings: {
+                        tab: {
+                            key: 9,
+                            handler: function() {
+                                return true;
+                            }
                         }
                     }
                 }
-            }
-        },
-        placeholder: 'Start writing your note...',
-        readOnly: false
-    });
+            },
+            placeholder: 'Start writing your note...',
+            readOnly: false
+        });
+        
+        console.log('Quill editor initialized successfully');
+    } catch (error) {
+        console.error('Failed to initialize Quill editor:', error);
+        showToast('Failed to initialize editor. Please refresh the page.', 'error');
+        editor = null;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
 
     // Enhanced dark theme styling
     const style = document.createElement('style');
@@ -150,45 +182,60 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(style);
 
-    // Auto-save on content change with word count update
-    editor.on('text-change', function() {
-        scheduleAutoSave();
-        updateWordCount();
-    });
+    // Initialize editor first, then set up event listeners
+    initializeEditor();
+    
+    // Set up editor event listeners after initialization
+    function setupEditorEventListeners() {
+        if (!editor) {
+            console.warn('Editor not initialized, retrying...');
+            setTimeout(setupEditorEventListeners, 100);
+            return;
+        }
+        
+        // Auto-save on content change with word count update
+        editor.on('text-change', function() {
+            scheduleAutoSave();
+            updateWordCount();
+        });
 
-    // Enhanced keyboard shortcuts
-    editor.on('keydown', function(e) {
-        if (e.ctrlKey && e.key === 's') {
-            e.preventDefault();
-            saveCurrentNote();
-        }
-        if (e.ctrlKey && e.key === 'f') {
-            e.preventDefault();
-            document.getElementById('searchInput').focus();
-        }
-        if (e.ctrlKey && e.key === 'b') {
-            e.preventDefault();
-            editor.format('bold', !editor.getFormat().bold);
-        }
-        if (e.ctrlKey && e.key === 'i') {
-            e.preventDefault();
-            editor.format('italic', !editor.getFormat().italic);
-        }
-        if (e.ctrlKey && e.key === 'u') {
-            e.preventDefault();
-            editor.format('underline', !editor.getFormat().underline);
-        }
-        if (e.ctrlKey && e.key === 'k') {
-            e.preventDefault();
-            const url = prompt('Enter URL:');
-            if (url) {
-                const range = editor.getSelection();
-                if (range) {
-                    editor.format('link', url);
+        // Enhanced keyboard shortcuts
+        editor.on('keydown', function(e) {
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                saveCurrentNote();
+            }
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                document.getElementById('searchInput').focus();
+            }
+            if (e.ctrlKey && e.key === 'b') {
+                e.preventDefault();
+                editor.format('bold', !editor.getFormat().bold);
+            }
+            if (e.ctrlKey && e.key === 'i') {
+                e.preventDefault();
+                editor.format('italic', !editor.getFormat().italic);
+            }
+            if (e.ctrlKey && e.key === 'u') {
+                e.preventDefault();
+                editor.format('underline', !editor.getFormat().underline);
+            }
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                const url = prompt('Enter URL:');
+                if (url) {
+                    const range = editor.getSelection();
+                    if (range) {
+                        editor.format('link', url);
+                    }
                 }
             }
-        }
-    });
+        });
+    }
+    
+    // Set up editor event listeners
+    setupEditorEventListeners();
 
     // Global keyboard shortcuts
     document.addEventListener('keydown', function(e) {
@@ -341,6 +388,15 @@ function createNoteItemHTML(note) {
     const date = new Date(note.created_at).toLocaleDateString();
     const updatedDate = new Date(note.updated_at).toLocaleDateString();
     
+    let tagsHtml = '';
+    if (note.tags && note.tags.length > 0) {
+        const tagSpans = note.tags.slice(0, 3).map(tag => 
+            `<span class="note-item-tag">${escapeHtml(tag)}</span>`
+        ).join('');
+        const moreTags = note.tags.length > 3 ? `<span class="note-item-tag">+${note.tags.length - 3}</span>` : '';
+        tagsHtml = `<div class="note-item-tags">${tagSpans}${moreTags}</div>`;
+    }
+    
     return `
         <div class="note-item ${isActive ? 'active' : ''} ${note.pinned ? 'pinned' : ''}" onclick="selectNote('${note.note_id}')">
             <div class="note-item-header">
@@ -356,14 +412,7 @@ function createNoteItemHTML(note) {
             </div>
             <div class="note-item-preview">${escapeHtml(preview)}</div>
             <div class="note-item-date">Created: ${date} | Updated: ${updatedDate}</div>
-            ${note.tags && note.tags.length > 0 ? `
-                <div class="note-item-tags">
-                    ${note.tags.slice(0, 3).map(tag => `
-                        <span class="note-item-tag">${escapeHtml(tag)}</span>
-                    `).join('')}
-                    ${note.tags.length > 3 ? `<span class="note-item-tag">+${note.tags.length - 3}</span>` : ''}
-                </div>
-            ` : ''}
+            ${tagsHtml}
         </div>
     `;
 }
@@ -661,9 +710,9 @@ function showSearchHistory() {
             <button onclick="clearSearchHistory()" class="clear-history-btn">Clear</button>
         </div>
         ${searchHistory.map(term => `
-            <div class="search-history-item" onclick="useSearchTerm('${escapeHtml(term)}')">
+            <div class="search-history-item" onclick="useSearchTerm('${term}')">
                 <span>${escapeHtml(term)}</span>
-                <button onclick="removeFromSearchHistory('${escapeHtml(term)}', event)" class="remove-history-btn">×</button>
+                <button onclick="removeFromSearchHistory('${term}', event)" class="remove-history-btn">×</button>
             </div>
         `).join('')}
     `;
@@ -1519,17 +1568,27 @@ function showImportPreview(notes) {
     const preview = document.getElementById('importPreview');
     const content = document.getElementById('importPreviewContent');
     
+    const previewItems = notes.map(note => {
+        let tagsHtml = '';
+        if (note.tags && note.tags.length > 0) {
+            const tagsText = note.tags.map(tag => escapeHtml(tag)).join(', ');
+            tagsHtml = `<span class="import-preview-tags">${tagsText}</span>`;
+        }
+        
+        return `
+            <div class="import-preview-item">
+                <div class="import-preview-title">${escapeHtml(note.title)}</div>
+                <div class="import-preview-meta">
+                    ${tagsHtml}
+                    <span class="import-preview-content-length">${note.content ? note.content.length : 0} characters</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
     content.innerHTML = `
         <div class="import-preview-list">
-            ${notes.map(note => `
-                <div class="import-preview-item">
-                    <div class="import-preview-title">${escapeHtml(note.title)}</div>
-                    <div class="import-preview-meta">
-                        ${note.tags && note.tags.length > 0 ? `<span class="import-preview-tags">${note.tags.map(tag => escapeHtml(tag)).join(', ')}</span>` : ''}
-                        <span class="import-preview-content-length">${note.content ? note.content.length : 0} characters</span>
-                    </div>
-                </div>
-            `).join('')}
+            ${previewItems}
         </div>
         <div class="import-preview-summary">
             <strong>${notes.length}</strong> notes ready to import

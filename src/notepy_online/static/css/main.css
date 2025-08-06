@@ -500,7 +500,6 @@ body {
 }
 
 .toast {
-    position: fixed;
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
     padding: 0.75rem 1rem;
@@ -508,7 +507,6 @@ body {
     font-size: 0.9rem;
     font-weight: 500;
     box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
-    z-index: 10000;
     pointer-events: none;
     opacity: 0;
     transform: translateY(10px);

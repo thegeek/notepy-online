@@ -37,6 +37,7 @@ STATUS_PAGE = f"""
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     {COMMON_STYLES}
+    <link rel="stylesheet" href="/static/css/editor.css">
 </head>
 <body>
     <div class="main-container">
@@ -111,7 +112,8 @@ STATUS_PAGE = f"""
         </div>
     </div>
     
-
+    <!-- Toast notifications -->
+    <div class="toast-container" id="toastContainer"></div>
     
     <script>
         let currentNotes = [];
@@ -296,38 +298,7 @@ STATUS_PAGE = f"""
             event.currentTarget.classList.add('selected');
         }}
         
-        function showToast(message, type = 'success') {{
-            // Remove any existing toast
-            const existingToast = document.querySelector('.toast');
-            if (existingToast) {{
-                existingToast.remove();
-            }}
-            
-            // Create new toast
-            const toast = document.createElement('div');
-            toast.className = `toast ${{type}}`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            
-            // Position toast
-            toast.style.top = '20px';
-            toast.style.right = '20px';
-            
-            // Show toast with animation
-            setTimeout(() => {{
-                toast.classList.add('show');
-            }}, 10);
-            
-            // Hide toast after 3 seconds
-            setTimeout(() => {{
-                toast.classList.remove('show');
-                setTimeout(() => {{
-                    if (toast.parentNode) {{
-                        toast.remove();
-                    }}
-                }}, 300);
-            }}, 3000);
-        }}
+
         
         function formatDate(dateString) {{
             const date = new Date(dateString);

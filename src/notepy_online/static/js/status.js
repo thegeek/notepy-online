@@ -171,21 +171,12 @@ function selectNote(noteId) {
 }
 
 function showToast(message, type = 'success') {
-    // Remove any existing toast
-    const existingToast = document.querySelector('.toast');
-    if (existingToast) {
-        existingToast.remove();
-    }
+    const container = document.getElementById('toastContainer');
     
-    // Create new toast
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.textContent = message;
-    document.body.appendChild(toast);
-    
-    // Position toast
-    toast.style.top = '20px';
-    toast.style.right = '20px';
+    container.appendChild(toast);
     
     // Show toast with animation
     setTimeout(() => {
