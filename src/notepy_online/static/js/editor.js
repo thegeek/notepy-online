@@ -1229,6 +1229,12 @@ function showToast(message, type = 'success') {
 // Set editable title with inline editing functionality
 function setEditableTitle(title) {
     const titleElement = document.getElementById('editorTitle');
+    
+    if (!titleElement) {
+        console.error('editorTitle element not found');
+        return;
+    }
+    
     titleElement.innerHTML = `
         <span class="title-text" onclick="startTitleEdit()">${escapeHtml(title)}</span>
         <input type="text" class="title-input" value="${escapeHtml(title)}" style="display: none;" 
@@ -1239,20 +1245,48 @@ function setEditableTitle(title) {
 // Start title editing
 function startTitleEdit() {
     const titleElement = document.getElementById('editorTitle');
-    const titleText = titleElement.querySelector('.title-text');
-    const titleInput = titleElement.querySelector('.title-input');
     
-    titleText.style.display = 'none';
-    titleInput.style.display = 'block';
-    titleInput.focus();
-    titleInput.select();
+    if (!titleElement) {
+        console.error('editorTitle element not found');
+        return;
+    }
+    
+    // Check if the editable structure exists, if not create it
+    let titleText = titleElement.querySelector('.title-text');
+    let titleInput = titleElement.querySelector('.title-input');
+    
+    if (!titleText || !titleInput) {
+        // Create the editable structure
+        const currentTitle = titleElement.textContent || 'New Note';
+        setEditableTitle(currentTitle);
+        titleText = titleElement.querySelector('.title-text');
+        titleInput = titleElement.querySelector('.title-input');
+    }
+    
+    if (titleText && titleInput) {
+        titleText.style.display = 'none';
+        titleInput.style.display = 'block';
+        titleInput.focus();
+        titleInput.select();
+    }
 }
 
 // Save title edit
 async function saveTitleEdit() {
     const titleElement = document.getElementById('editorTitle');
+    
+    if (!titleElement) {
+        console.error('editorTitle element not found');
+        return;
+    }
+    
     const titleText = titleElement.querySelector('.title-text');
     const titleInput = titleElement.querySelector('.title-input');
+    
+    if (!titleText || !titleInput) {
+        return; // Elements don't exist, can't save
+    }
+    
     const newTitle = titleInput.value.trim();
     
     if (!newTitle) {
@@ -1282,13 +1316,21 @@ function handleTitleKeydown(event) {
     } else if (event.key === 'Escape') {
         event.preventDefault();
         const titleElement = document.getElementById('editorTitle');
+        
+        if (!titleElement) {
+            console.error('editorTitle element not found');
+            return;
+        }
+        
         const titleText = titleElement.querySelector('.title-text');
         const titleInput = titleElement.querySelector('.title-input');
         
-        // Revert to original title
-        titleInput.value = titleText.textContent;
-        titleText.style.display = 'block';
-        titleInput.style.display = 'none';
+        if (titleText && titleInput) {
+            // Revert to original title
+            titleInput.value = titleText.textContent;
+            titleText.style.display = 'block';
+            titleInput.style.display = 'none';
+        }
     }
 }
 
