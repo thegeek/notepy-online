@@ -804,10 +804,57 @@ async function togglePinNote(noteId, event) {
 async function deleteNote(noteId, event) {
     event.stopPropagation();
     
-    if (!confirm('Are you sure you want to delete this note?')) {
-        return;
-    }
+    showDeleteConfirmModal(noteId);
+}
+
+// Show delete confirmation modal
+function showDeleteConfirmModal(noteId) {
+    const modal = document.createElement('div');
+    modal.className = 'delete-modal';
+    modal.innerHTML = `
+        <div class="delete-content">
+            <div class="delete-header">
+                <h2>🗑️ Delete Note</h2>
+            </div>
+            <div class="delete-body">
+                <p>Are you sure you want to delete this note?</p>
+                <p class="delete-warning">This action cannot be undone.</p>
+            </div>
+            <div class="delete-footer">
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDeleteNote('${noteId}')">Delete Note</button>
+            </div>
+        </div>
+    `;
     
+    document.body.appendChild(modal);
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeDeleteModal();
+        }
+    });
+    
+    // Close modal with ESC key
+    document.addEventListener('keydown', function handleEsc(e) {
+        if (e.key === 'Escape') {
+            closeDeleteModal();
+            document.removeEventListener('keydown', handleEsc);
+        }
+    });
+}
+
+// Close delete modal
+function closeDeleteModal() {
+    const modal = document.querySelector('.delete-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Confirm delete note
+async function confirmDeleteNote(noteId) {
     try {
         const response = await fetch(`/api/notes/${noteId}`, {
             method: 'DELETE'
@@ -831,6 +878,8 @@ async function deleteNote(noteId, event) {
     } catch (error) {
         console.error('Error deleting note:', error);
         showToast('Error deleting note', 'error');
+    } finally {
+        closeDeleteModal();
     }
 }
 
