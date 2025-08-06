@@ -7,6 +7,9 @@ argument parsing and provides both individual note operations and batch operatio
 Commands:
 - server: Start the web server with optional SSL support
 - bootstrap: Initialize application resources and SSL certificates
+  - init: Initialize the resource structure and SSL certificate
+  - check: Check the status of resources and configuration
+  - open: Open the resource folder in the default file explorer
 - notes: Note management commands
   - create: Create a new note
   - list: List all notes with optional filtering
@@ -25,6 +28,8 @@ Commands:
 import asyncio
 import click
 import json
+import platform
+import subprocess
 from pathlib import Path
 
 from .server import run_server
@@ -153,6 +158,48 @@ def check() -> None:
 
     except Exception as e:
         click.echo(f"❌ Resource check failed: {e}", err=True)
+        raise click.Abort()
+
+
+@bootstrap.command()
+def open() -> None:
+    """Open the resource folder in the default file explorer."""
+    try:
+        click.echo("📁 Opening resource folder...")
+
+        # Create resource manager
+        resource_mgr = ResourceManager()
+
+        # Get the resource directory path
+        resource_path = resource_mgr.resource_dir
+
+        # Check if the directory exists
+        if not resource_path.exists():
+            click.echo(
+                "❌ Resource directory does not exist. Run 'bootstrap init' first."
+            )
+            raise click.Abort()
+
+        # Open the folder using platform-specific commands
+        system = platform.system().lower()
+
+        if system == "windows":
+            subprocess.run(["start", str(resource_path)], shell=True, check=True)
+        elif system == "darwin":  # macOS
+            subprocess.run(["open", str(resource_path)], check=True)
+        elif system == "linux":
+            subprocess.run(["xdg-open", str(resource_path)], check=True)
+        else:
+            click.echo(f"❌ Unsupported operating system: {system}", err=True)
+            raise click.Abort()
+
+        click.echo(f"✅ Opened resource folder: {resource_path}")
+
+    except subprocess.CalledProcessError as e:
+        click.echo(f"❌ Failed to open folder: {e}", err=True)
+        raise click.Abort()
+    except Exception as e:
+        click.echo(f"❌ Failed to open resource folder: {e}", err=True)
         raise click.Abort()
 
 
