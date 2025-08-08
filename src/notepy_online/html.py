@@ -37,7 +37,7 @@ STATUS_PAGE = f"""
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     {COMMON_STYLES}
-    <link rel="stylesheet" href="/static/css/editor.css">
+    <link rel="stylesheet" href="/static/css/editor.css?v=1.1">
 </head>
 <body>
     <div class="main-container">
@@ -58,7 +58,7 @@ STATUS_PAGE = f"""
                 </div>
             </div>
         </div>
-        
+
         <div class="content-grid">
             <div class="sidebar">
                 <h2 class="section-title">📊 Statistics</h2>
@@ -84,37 +84,45 @@ STATUS_PAGE = f"""
                         <div class="stat-label">Storage</div>
                     </div>
                 </div>
-                
+
                 <h2 class="section-title">🔍 Quick Search</h2>
                 <div class="search-container">
                     <input type="text" class="search-input" id="quickSearch" placeholder="Search notes...">
                     <div class="filter-tags" id="filterTags"></div>
                 </div>
-                
+
                 <h2 class="section-title">🏷️ Popular Tags</h2>
                 <div class="filter-tags" id="popularTags"></div>
             </div>
-            
+
             <div class="main-content">
                 <div class="section-title">
                     <span>📝</span>
                     <span>Your Notes</span>
+                    <a href="/" class="action-button" style="margin-left: auto;">
+                        <span>✏️</span>
+                        New Note
+                    </a>
                 </div>
-                
+
                 <div id="notesContainer">
                     <div class="empty-state">
                         <div class="empty-icon">📝</div>
                         <div class="empty-title">No Notes Yet</div>
                         <div class="empty-description">Use the editor to create your first note</div>
+                        <a href="/" class="action-button" style="margin-top: 1rem;">
+                            <span>✏️</span>
+                            Create Your First Note
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <!-- Toast notifications -->
     <div class="toast-container" id="toastContainer"></div>
-    
+
     <!-- HTML Templates for Status Page -->
     <script type="text/template" id="note-card-template">
         <div class="note-card">
@@ -158,7 +166,7 @@ STATUS_PAGE = f"""
             </div>
         </div>
     </script>
-    
+
          <script>
          // Template utility functions - Retrieve templates from DOM
          function getTemplate(templateId) {{
@@ -169,25 +177,25 @@ STATUS_PAGE = f"""
              }}
              return templateElement.textContent.trim();
          }}
-         
+
          function createElementFromTemplate(templateId, data = {{}}) {{
              const template = getTemplate(templateId);
              if (!template) {{
                  return null;
              }}
-             
+
              const tempDiv = document.createElement('div');
              tempDiv.innerHTML = template;
              const element = tempDiv.firstElementChild;
-             
+
              // Apply data to template
              if (data) {{
                  applyDataToElement(element, data);
              }}
-             
+
              return element;
          }}
-         
+
          function applyDataToElement(element, data) {{
              // Apply text content to elements with data attributes
              Object.keys(data).forEach(key => {{
@@ -196,7 +204,7 @@ STATUS_PAGE = f"""
                      targetElement.textContent = data[key];
                  }}
              }});
-             
+
              // Apply classes
              if (data.classes) {{
                  Object.keys(data.classes).forEach(key => {{
@@ -206,7 +214,7 @@ STATUS_PAGE = f"""
                      }}
                  }});
              }}
-             
+
              // Apply attributes
              if (data.attributes) {{
                  Object.keys(data.attributes).forEach(key => {{
@@ -217,23 +225,23 @@ STATUS_PAGE = f"""
                  }});
              }}
          }}
-         
+
          let currentNotes = [];
          let currentTags = [];
-        
+
         // Load initial data
         document.addEventListener('DOMContentLoaded', function() {{
             loadNotes();
             loadTags();
             loadStats();
         }});
-        
+
         // Quick search functionality
         document.getElementById('quickSearch').addEventListener('input', function(e) {{
             const searchTerm = e.target.value.toLowerCase();
             filterNotes(searchTerm);
         }});
-        
+
         async function loadNotes() {{
             try {{
                 const response = await fetch('/api/notes');
@@ -245,7 +253,7 @@ STATUS_PAGE = f"""
                 showToast('Error loading notes', 'error');
             }}
         }}
-        
+
         async function loadTags() {{
             try {{
                 const response = await fetch('/api/tags');
@@ -256,13 +264,13 @@ STATUS_PAGE = f"""
                 console.error('Error loading tags:', error);
             }}
         }}
-        
+
         async function loadStats() {{
             try {{
                 const response = await fetch('/api/notes');
                 const data = await response.json();
                 const notes = data.notes || [];
-                
+
                 document.getElementById('totalNotes').textContent = notes.length;
                 document.getElementById('totalTags').textContent = currentTags.length;
                 document.getElementById('recentNotes').textContent = notes.filter(note => {{
@@ -271,7 +279,7 @@ STATUS_PAGE = f"""
                     weekAgo.setDate(weekAgo.getDate() - 7);
                     return noteDate > weekAgo;
                 }}).length;
-                
+
                 // Calculate storage (rough estimate)
                 const totalSize = notes.reduce((sum, note) => sum + (note.content?.length || 0), 0);
                 const sizeKB = Math.round(totalSize / 1024);
@@ -280,36 +288,45 @@ STATUS_PAGE = f"""
                 console.error('Error loading stats:', error);
             }}
         }}
-        
+
                  function displayNotes(notes) {{
              const container = document.getElementById('notesContainer');
-             
+
              if (notes.length === 0) {{
                  const emptyState = createElementFromTemplate('empty-state-template');
                  emptyState.querySelector('.empty-title').textContent = 'No Notes Found';
                  emptyState.querySelector('.empty-description').textContent = 'Try adjusting your search or create a new note';
                  emptyState.querySelector('.create-note-btn').onclick = () => window.location.href = '/';
-                 
+
                  container.innerHTML = '';
                  container.appendChild(emptyState);
                  return;
              }}
-             
+
+             // Add New Note button at the top
+             const newNoteButton = document.createElement('div');
+             newNoteButton.className = 'new-note-button';
+             newNoteButton.onclick = () => window.location.href = '/';
+             newNoteButton.innerHTML = `
+                 <div class="note-item-title">➕ New Note</div>
+                 <div class="note-item-preview">Create a new note</div>
+             `;
+
              const notesGrid = document.createElement('div');
              notesGrid.className = 'notes-grid';
-             
+
              notes.forEach(note => {{
                  const noteCard = createElementFromTemplate('note-card-template');
-                 
+
                  // Set content
                  noteCard.querySelector('.note-title').textContent = note.title;
                  noteCard.querySelector('.note-date').textContent = formatDate(note.created_at);
                  noteCard.querySelector('.note-content').textContent = note.content.substring(0, 150) + (note.content.length > 150 ? '...' : '');
-                 
+
                  // Set up event handlers
                  noteCard.onclick = () => selectNote(note.note_id);
                  noteCard.querySelector('.delete-btn').onclick = (event) => deleteNote(note.note_id, event);
-                 
+
                  // Handle tags
                  const tagsContainer = noteCard.querySelector('.note-tags');
                  if (note.tags && note.tags.length > 0) {{
@@ -320,18 +337,19 @@ STATUS_PAGE = f"""
                          tagsContainer.appendChild(tagSpan);
                      }});
                  }}
-                 
+
                  notesGrid.appendChild(noteCard);
              }});
-             
+
              container.innerHTML = '';
+             container.appendChild(newNoteButton);
              container.appendChild(notesGrid);
          }}
-        
+
                  function displayPopularTags() {{
              const container = document.getElementById('popularTags');
              const popularTags = currentTags.slice(0, 10); // Show top 10 tags
-             
+
              container.innerHTML = '';
              popularTags.forEach(tag => {{
                  const tagSpan = document.createElement('span');
@@ -341,7 +359,7 @@ STATUS_PAGE = f"""
                  container.appendChild(tagSpan);
              }});
          }}
-        
+
         function filterNotes(searchTerm) {{
             const filteredNotes = currentNotes.filter(note => {{
                 const titleMatch = note.title.toLowerCase().includes(searchTerm);
@@ -351,53 +369,53 @@ STATUS_PAGE = f"""
             }});
             displayNotes(filteredNotes);
         }}
-        
+
         function filterByTag(tag) {{
-            const filteredNotes = currentNotes.filter(note => 
+            const filteredNotes = currentNotes.filter(note =>
                 (note.tags || []).includes(tag)
             );
             displayNotes(filteredNotes);
-            
+
             // Update active state
             document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
         }}
-        
 
-        
 
-        
 
-        
 
-        
 
-        
 
-        
+
+
+
+
+
+
+
                  async function deleteNote(noteId, event) {{
              event.stopPropagation();
-             
+
              showDeleteConfirmModal(noteId);
          }}
-         
+
          // Show delete confirmation modal
          function showDeleteConfirmModal(noteId) {{
              const modal = createElementFromTemplate('delete-modal-template');
-             
+
              // Set up event handlers
              modal.querySelector('.cancel-btn').onclick = closeDeleteModal;
              modal.querySelector('.confirm-btn').onclick = () => confirmDeleteNote(noteId);
-             
+
              document.body.appendChild(modal);
-             
+
              // Close modal when clicking outside
              modal.addEventListener('click', function(e) {{
                  if (e.target === modal) {{
                      closeDeleteModal();
                  }}
              }});
-             
+
              // Close modal with ESC key
              document.addEventListener('keydown', function handleEsc(e) {{
                  if (e.key === 'Escape') {{
@@ -406,7 +424,7 @@ STATUS_PAGE = f"""
                  }}
              }});
          }}
-         
+
          // Close delete modal
          function closeDeleteModal() {{
              const modal = document.querySelector('.delete-modal');
@@ -414,14 +432,14 @@ STATUS_PAGE = f"""
                  modal.remove();
              }}
          }}
-         
+
          // Confirm delete note
          async function confirmDeleteNote(noteId) {{
              try {{
                  const response = await fetch(`/api/notes/${{noteId}}`, {{
                      method: 'DELETE'
                  }});
-                 
+
                  if (response.ok) {{
                      showToast('Note deleted successfully');
                      loadNotes();
@@ -438,24 +456,24 @@ STATUS_PAGE = f"""
                  closeDeleteModal();
              }}
          }}
-        
+
         function selectNote(noteId) {{
             // Remove previous selection
             document.querySelectorAll('.note-card').forEach(card => {{
                 card.classList.remove('selected');
             }});
-            
+
             // Add selection to clicked card
             event.currentTarget.classList.add('selected');
         }}
-        
 
-        
+
+
         function formatDate(dateString) {{
             const date = new Date(dateString);
             return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {{hour: '2-digit', minute:'2-digit'}});
         }}
-        
+
         function escapeHtml(text) {{
             const div = document.createElement('div');
             div.textContent = text;
@@ -481,18 +499,18 @@ MAIN_PAGE = """
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
-    <link rel="stylesheet" href="/static/css/editor.css">
+    <link rel="stylesheet" href="/static/css/editor.css?v=1.1">
 </head>
 <body>
     <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
-    
+
     <div class="app-container">
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-title">📝 Notes</div>
                 <button class="toggle-btn" onclick="toggleSidebar()">×</button>
             </div>
-            
+
             <!-- Enhanced Search Section -->
             <div class="search-section">
                 <div class="search-container">
@@ -500,7 +518,7 @@ MAIN_PAGE = """
                     <button class="search-btn" onclick="toggleAdvancedSearch()">🔍</button>
                     <button class="search-history-btn" onclick="showSearchHistory()" title="Search History">📋</button>
                 </div>
-                
+
                 <!-- Advanced Search Panel -->
                 <div class="advanced-search" id="advancedSearch" style="display: none;">
                     <div class="search-filters">
@@ -533,7 +551,7 @@ MAIN_PAGE = """
                     </div>
                 </div>
             </div>
-            
+
             <!-- Tag Filter Section -->
             <div class="tag-filter-section">
                 <div class="section-header">
@@ -544,15 +562,15 @@ MAIN_PAGE = """
                     <!-- Tags will be populated here -->
                 </div>
             </div>
-            
+
             <div class="notes-list" id="notesList">
-                <div class="note-item" onclick="createNewNote()">
+                <div class="new-note-button" onclick="createNewNote()">
                     <div class="note-item-title">➕ New Note</div>
                     <div class="note-item-preview">Create a new note</div>
                 </div>
             </div>
         </div>
-        
+
         <div class="main-content">
             <div class="editor-header">
                 <div class="editor-info">
@@ -572,7 +590,7 @@ MAIN_PAGE = """
                     <button class="btn" onclick="saveCurrentNote()" id="saveBtn" title="Save Note (Ctrl+S)">💾 Save</button>
                 </div>
             </div>
-            
+
             <!-- Tag Management Section -->
             <div class="tag-management" id="tagManagement" style="display: none;">
                 <div class="tag-input-container">
@@ -583,15 +601,15 @@ MAIN_PAGE = """
                     <!-- Current note tags will be displayed here -->
                 </div>
             </div>
-            
+
             <div class="editor-container">
                 <div id="editor"></div>
             </div>
         </div>
     </div>
-    
+
     <div class="save-indicator" id="saveIndicator">Saved!</div>
-    
+
     <!-- Toast notifications -->
     <div class="toast-container" id="toastContainer"></div>
 
@@ -805,7 +823,7 @@ MAIN_PAGE = """
         </div>
     </script>
 
-    <script src="/static/js/editor.js"></script>
+    <script src="/static/js/editor.js?v=1.5"></script>
 </body>
 </html>
 """
@@ -870,5 +888,5 @@ NOT_FOUND_PAGE = f"""
 </body>
 </html>
 """
-""" 
+"""
 """

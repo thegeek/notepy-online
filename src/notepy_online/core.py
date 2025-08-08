@@ -18,7 +18,38 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import html2text  # type: ignore
+
 from .resource import ResourceManager
+
+
+def html_to_markdown(html_content: str) -> str:
+    """Convert HTML content to Markdown format.
+
+    Args:
+        html_content: HTML content from the editor
+
+    Returns:
+        Markdown formatted content
+    """
+    if not html_content or html_content.strip() == "":
+        return ""
+
+    # Configure html2text for better Markdown output
+    h = html2text.HTML2Text()
+    h.ignore_links = False
+    h.ignore_images = False
+    h.ignore_emphasis = False
+    h.ignore_tables = False
+    h.body_width = 0  # Don't wrap lines
+    h.unicode_snob = True  # Use Unicode characters
+    h.escape_snob = True  # Escape special characters
+
+    # Convert HTML to Markdown
+    markdown = h.handle(html_content)
+
+    # Clean up the output
+    return markdown.strip()
 
 
 class Note:
@@ -98,13 +129,14 @@ class Note:
 
         Args:
             title: New title (optional)
-            content: New content (optional)
+            content: New content (optional) - can be HTML from editor
             tags: New tags (optional)
         """
         if title is not None:
             self.title = title
         if content is not None:
-            self.content = content
+            # Convert HTML content to Markdown for storage
+            self.content = html_to_markdown(content)
         if tags is not None:
             self.tags = tags
         self.updated_at = datetime.now(timezone.utc)
@@ -226,13 +258,15 @@ class NoteManager:
 
         Args:
             title: Note title
-            content: Note content
+            content: Note content (can be HTML from editor)
             tags: List of tags
 
         Returns:
             Created note instance
         """
-        note = Note(title=title, content=content, tags=tags)
+        # Convert HTML content to Markdown for storage
+        markdown_content = html_to_markdown(content)
+        note = Note(title=title, content=markdown_content, tags=tags)
         self.notes[note.note_id] = note
         self._save_notes()
         return note

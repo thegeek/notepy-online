@@ -15,16 +15,16 @@ function createElementFromTemplate(templateId, data = {}) {
     if (!template) {
         return null;
     }
-    
+
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = template;
     const element = tempDiv.firstElementChild;
-    
+
     // Apply data to template
     if (data) {
         applyDataToElement(element, data);
     }
-    
+
     return element;
 }
 
@@ -36,7 +36,7 @@ function applyDataToElement(element, data) {
             targetElement.textContent = data[key];
         }
     });
-    
+
     // Apply classes
     if (data.classes) {
         Object.keys(data.classes).forEach(key => {
@@ -46,7 +46,7 @@ function applyDataToElement(element, data) {
             }
         });
     }
-    
+
     // Apply attributes
     if (data.attributes) {
         Object.keys(data.attributes).forEach(key => {
@@ -79,17 +79,17 @@ function initializeEditor() {
         setTimeout(initializeEditor, 100);
         return;
     }
-    
+
     console.log('Quill library is available, initializing editor...');
-    
+
     // Enhanced Quill toolbar with more formatting options (without table for now)
     const toolbarOptions = [
         ['bold', 'italic', 'underline', 'strike'],
         ['blockquote', 'code-block'],
         [{ 'header': 1 }, { 'header': 2 }, { 'header': 3 }],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        [{ 'script': 'sub'}, { 'script': 'super' }],
-        [{ 'indent': '-1'}, { 'indent': '+1' }],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        [{ 'script': 'sub' }, { 'script': 'super' }],
+        [{ 'indent': '-1' }, { 'indent': '+1' }],
         [{ 'direction': 'rtl' }],
         [{ 'size': ['small', false, 'large', 'huge'] }],
         [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
@@ -107,14 +107,14 @@ function initializeEditor() {
             showToast('Editor library failed to load. Please refresh the page.', 'error');
             return;
         }
-        
+
         const editorElement = document.getElementById('editor');
         if (!editorElement) {
             console.error('Editor element not found');
             showToast('Editor element not found. Please refresh the page.', 'error');
             return;
         }
-        
+
         editor = new Quill('#editor', {
             theme: 'snow',
             modules: {
@@ -123,17 +123,17 @@ function initializeEditor() {
                     bindings: {
                         tab: {
                             key: 9,
-                            handler: function() {
+                            handler: function () {
                                 return true;
                             }
                         }
                     }
                 }
             },
-            placeholder: 'Start writing your note...',
+            placeholder: '',
             readOnly: false
         });
-        
+
         console.log('Quill editor initialized successfully');
     } catch (error) {
         console.error('Failed to initialize Quill editor:', error);
@@ -142,7 +142,7 @@ function initializeEditor() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 
     // Enhanced dark theme styling
     const style = document.createElement('style');
@@ -156,8 +156,8 @@ document.addEventListener('DOMContentLoaded', function() {
             min-height: 400px;
             padding: 2rem;
         }
-        .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4, .ql-editor h5, .ql-editor h6 { 
-            color: #ffffff; 
+        .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4, .ql-editor h5, .ql-editor h6 {
+            color: #ffffff;
             margin-top: 1.5rem;
             margin-bottom: 1rem;
         }
@@ -167,28 +167,28 @@ document.addEventListener('DOMContentLoaded', function() {
         .ql-editor p { margin-bottom: 1rem; }
         .ql-editor ul, .ql-editor ol { margin-bottom: 1rem; padding-left: 2rem; }
         .ql-editor li { margin-bottom: 0.5rem; }
-        .ql-editor code { 
-            background: #2a2a2a; 
-            padding: 2px 6px; 
-            border-radius: 4px; 
+        .ql-editor code {
+            background: #2a2a2a;
+            padding: 2px 6px;
+            border-radius: 4px;
             font-family: 'JetBrains Mono', 'Fira Code', monospace;
         }
-        .ql-editor pre { 
-            background: #2a2a2a; 
-            padding: 1rem; 
-            border-radius: 8px; 
-            overflow-x: auto; 
+        .ql-editor pre {
+            background: #2a2a2a;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
             margin: 1rem 0;
         }
         .ql-editor pre code {
             background: none;
             padding: 0;
         }
-        .ql-editor blockquote { 
-            border-left: 4px solid #667eea; 
-            padding-left: 1rem; 
-            margin: 1rem 0; 
-            color: #a0a0a0; 
+        .ql-editor blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            color: #a0a0a0;
             font-style: italic;
         }
         .ql-editor table {
@@ -205,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
             background: #2a2a2a;
             font-weight: 600;
         }
-        
+
         /* Enhanced dark theme for toolbar */
         .ql-toolbar.ql-snow {
             border: 1px solid #333;
@@ -236,12 +236,17 @@ document.addEventListener('DOMContentLoaded', function() {
             background: #0a0a0a;
             border-radius: 0 0 8px 8px;
         }
+
+        /* Fix placeholder color */
+        .ql-editor.ql-blank::before {
+            color: #666 !important;
+        }
     `;
     document.head.appendChild(style);
 
     // Initialize editor first, then set up event listeners
     initializeEditor();
-    
+
     // Set up editor event listeners after initialization
     function setupEditorEventListeners() {
         if (!editor) {
@@ -249,15 +254,15 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(setupEditorEventListeners, 100);
             return;
         }
-        
+
         // Auto-save on content change with word count update
-        editor.on('text-change', function() {
+        editor.on('text-change', function () {
             scheduleAutoSave();
             updateWordCount();
         });
 
         // Enhanced keyboard shortcuts
-        editor.on('keydown', function(e) {
+        editor.on('keydown', function (e) {
             if (e.ctrlKey && e.key === 's') {
                 e.preventDefault();
                 saveCurrentNote();
@@ -290,12 +295,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Set up editor event listeners
     setupEditorEventListeners();
 
     // Global keyboard shortcuts
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
         // Ctrl+N: New note
         if (e.ctrlKey && e.key === 'n') {
             e.preventDefault();
@@ -331,15 +336,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load initial data
     loadNotes();
     loadTags();
-    
+
+    // Hide editor initially - it will be shown when a note is selected
+    hideEditor();
+
     // Enhanced search functionality
-    document.getElementById('searchInput').addEventListener('input', function(e) {
+    document.getElementById('searchInput').addEventListener('input', function (e) {
         const searchTerm = e.target.value;
         filterNotes(searchTerm);
     });
 
     // Search history functionality
-    document.getElementById('searchInput').addEventListener('keydown', function(e) {
+    document.getElementById('searchInput').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
             const searchTerm = e.target.value.trim();
             if (searchTerm) {
@@ -349,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Tag input functionality
-    document.getElementById('tagInput').addEventListener('keydown', function(e) {
+    document.getElementById('tagInput').addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ',') {
             e.preventDefault();
             addTagToNote();
@@ -358,7 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize word count
     updateWordCount();
-    
+
     // Mobile touch gestures
     if ('ontouchstart' in window) {
         initializeTouchGestures();
@@ -394,37 +402,37 @@ async function loadTags() {
 // Enhanced note display with tags and better formatting
 function displayNotes(notes) {
     const container = document.getElementById('notesList');
-    
+
     // Clear the container
     container.innerHTML = '';
-    
+
     // Always show "New Note" option first
     const newNoteItem = document.createElement('div');
-    newNoteItem.className = 'note-item';
+    newNoteItem.className = 'new-note-button';
     newNoteItem.onclick = createNewNote;
     newNoteItem.innerHTML = `
         <div class="note-item-title">➕ New Note</div>
         <div class="note-item-preview">Create a new note</div>
     `;
     container.appendChild(newNoteItem);
-    
+
     // Separate pinned and unpinned notes
     const pinnedNotes = notes.filter(note => note.pinned);
     const unpinnedNotes = notes.filter(note => !note.pinned);
-    
+
     // Add pinned notes first
     if (pinnedNotes.length > 0) {
         const pinnedHeader = document.createElement('div');
         pinnedHeader.className = 'notes-section-header';
         pinnedHeader.innerHTML = '<span>📌 Pinned Notes</span>';
         container.appendChild(pinnedHeader);
-        
+
         pinnedNotes.forEach(note => {
             const noteElement = createNoteItemElement(note);
             container.appendChild(noteElement);
         });
     }
-    
+
     // Add unpinned notes
     if (unpinnedNotes.length > 0) {
         if (pinnedNotes.length > 0) {
@@ -433,7 +441,7 @@ function displayNotes(notes) {
             unpinnedHeader.innerHTML = '<span>📝 All Notes</span>';
             container.appendChild(unpinnedHeader);
         }
-        
+
         unpinnedNotes.forEach(note => {
             const noteElement = createNoteItemElement(note);
             container.appendChild(noteElement);
@@ -447,22 +455,22 @@ function createNoteItemElement(note) {
     const preview = note.content.replace(/<[^>]*>/g, '').substring(0, 100) + (note.content.length > 100 ? '...' : '');
     const date = new Date(note.created_at).toLocaleDateString();
     const updatedDate = new Date(note.updated_at).toLocaleDateString();
-    
+
     // Create element from template
     const noteElement = createElementFromTemplate('note-item-template');
-    
+
     // Set content
     noteElement.querySelector('.note-item-title').textContent = note.title;
     noteElement.querySelector('.note-item-preview').textContent = preview;
     noteElement.querySelector('.note-item-date').textContent = `Created: ${date} | Updated: ${updatedDate}`;
-    
+
     // Set classes
     if (isActive) noteElement.classList.add('active');
     if (note.pinned) noteElement.classList.add('pinned');
-    
+
     // Set onclick handler
     noteElement.onclick = (event) => selectNote(note.note_id, event);
-    
+
     // Handle tags
     const tagsContainer = noteElement.querySelector('.note-item-tags');
     if (note.tags && note.tags.length > 0) {
@@ -473,7 +481,7 @@ function createNoteItemElement(note) {
             return span;
         });
         tagSpans.forEach(span => tagsContainer.appendChild(span));
-        
+
         if (note.tags.length > 3) {
             const moreSpan = document.createElement('span');
             moreSpan.className = 'note-item-tag';
@@ -481,17 +489,17 @@ function createNoteItemElement(note) {
             tagsContainer.appendChild(moreSpan);
         }
     }
-    
+
     // Set up action buttons
     const pinBtn = noteElement.querySelector('.pin-btn');
     const deleteBtn = noteElement.querySelector('.delete-btn');
-    
+
     pinBtn.onclick = (event) => togglePinNote(note.note_id, event);
     pinBtn.title = note.pinned ? 'Unpin' : 'Pin';
     pinBtn.textContent = note.pinned ? '📌' : '📍';
-    
+
     deleteBtn.onclick = (event) => deleteNote(note.note_id, event);
-    
+
     return noteElement;
 }
 
@@ -530,9 +538,9 @@ function parseSearchOperators(searchTerm) {
         hasTag: [],
         noTag: []
     };
-    
+
     const terms = searchTerm.split(/\s+/);
-    
+
     terms.forEach(term => {
         if (term.startsWith('title:')) {
             operators.title.push(term.substring(6).toLowerCase());
@@ -553,7 +561,7 @@ function parseSearchOperators(searchTerm) {
             operators.tag.push(term.toLowerCase());
         }
     });
-    
+
     return operators;
 }
 
@@ -561,28 +569,28 @@ function parseSearchOperators(searchTerm) {
 function matchesSearchOperators(note, operators) {
     // Check title matches
     if (operators.title.length > 0) {
-        const titleMatch = operators.title.some(term => 
+        const titleMatch = operators.title.some(term =>
             note.title.toLowerCase().includes(term)
         );
         if (!titleMatch) return false;
     }
-    
+
     // Check content matches
     if (operators.content.length > 0) {
-        const contentMatch = operators.content.some(term => 
+        const contentMatch = operators.content.some(term =>
             note.content.toLowerCase().includes(term)
         );
         if (!contentMatch) return false;
     }
-    
+
     // Check tag matches
     if (operators.tag.length > 0) {
-        const tagMatch = operators.tag.some(term => 
+        const tagMatch = operators.tag.some(term =>
             (note.tags || []).some(tag => tag.toLowerCase().includes(term))
         );
         if (!tagMatch) return false;
     }
-    
+
     // Check date filter
     if (operators.date) {
         const noteDate = new Date(note.updated_at);
@@ -590,23 +598,23 @@ function matchesSearchOperators(note, operators) {
         const dayDiff = Math.abs(noteDate - searchDate) / (1000 * 60 * 60 * 24);
         if (dayDiff > 1) return false; // Within 1 day
     }
-    
+
     // Check has tag
     if (operators.hasTag.length > 0) {
-        const hasAllTags = operators.hasTag.every(term => 
+        const hasAllTags = operators.hasTag.every(term =>
             (note.tags || []).some(tag => tag.toLowerCase().includes(term))
         );
         if (!hasAllTags) return false;
     }
-    
+
     // Check no tag
     if (operators.noTag.length > 0) {
-        const hasAnyForbiddenTag = operators.noTag.some(term => 
+        const hasAnyForbiddenTag = operators.noTag.some(term =>
             (note.tags || []).some(tag => tag.toLowerCase().includes(term))
         );
         if (hasAnyForbiddenTag) return false;
     }
-    
+
     return true;
 }
 
@@ -618,7 +626,7 @@ function applyAdditionalFilters(notes) {
     if (searchFilters.dateFilter) {
         const now = new Date();
         const filterDate = new Date();
-        
+
         switch (searchFilters.dateFilter) {
             case 'today':
                 filterDate.setHours(0, 0, 0, 0);
@@ -641,8 +649,8 @@ function applyAdditionalFilters(notes) {
 
     // Tag filtering
     if (searchFilters.selectedTags.length > 0) {
-        filtered = filtered.filter(note => 
-            searchFilters.selectedTags.every(tag => 
+        filtered = filtered.filter(note =>
+            searchFilters.selectedTags.every(tag =>
                 (note.tags || []).includes(tag)
             )
         );
@@ -651,7 +659,7 @@ function applyAdditionalFilters(notes) {
     // Sorting
     filtered.sort((a, b) => {
         let aValue, bValue;
-        
+
         switch (searchFilters.sortBy) {
             case 'title':
                 aValue = a.title.toLowerCase();
@@ -669,7 +677,7 @@ function applyAdditionalFilters(notes) {
                 aValue = new Date(a.updated_at);
                 bValue = new Date(b.updated_at);
         }
-        
+
         if (searchFilters.sortOrder === 'asc') {
             return aValue > bValue ? 1 : -1;
         } else {
@@ -685,7 +693,7 @@ function applyFilters() {
     searchFilters.sortBy = document.getElementById('sortBy').value;
     searchFilters.sortOrder = document.getElementById('sortOrder').value;
     searchFilters.dateFilter = document.getElementById('dateFilter').value;
-    
+
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     filterNotes(searchTerm);
 }
@@ -693,25 +701,25 @@ function applyFilters() {
 // Display tag filters in sidebar
 function displayTagFilters() {
     const container = document.getElementById('tagFilters');
-    
+
     if (currentTags.length === 0) {
         container.innerHTML = '<div style="color: #666; font-size: 0.8rem; text-align: center;">No tags yet</div>';
         return;
     }
-    
+
     container.innerHTML = '';
     currentTags.forEach(tag => {
         const noteCount = currentNotes.filter(note => (note.tags || []).includes(tag)).length;
         const isActive = searchFilters.selectedTags.includes(tag);
-        
+
         const tagFilter = createElementFromTemplate('tag-filter-template');
         tagFilter.querySelector('.tag-name').textContent = tag;
         tagFilter.querySelector('.tag-filter-count').textContent = noteCount;
-        
+
         if (isActive) {
             tagFilter.classList.add('active');
         }
-        
+
         tagFilter.onclick = () => toggleTagFilter(tag);
         container.appendChild(tagFilter);
     });
@@ -751,15 +759,15 @@ function toggleAdvancedSearch() {
 function addToSearchHistory(searchTerm) {
     // Remove if already exists
     searchHistory = searchHistory.filter(term => term !== searchTerm);
-    
+
     // Add to beginning
     searchHistory.unshift(searchTerm);
-    
+
     // Keep only last 10 searches
     if (searchHistory.length > 10) {
         searchHistory = searchHistory.slice(0, 10);
     }
-    
+
     // Save to localStorage
     localStorage.setItem('notepy_search_history', JSON.stringify(searchHistory));
 }
@@ -768,15 +776,15 @@ function addToSearchHistory(searchTerm) {
 function showSearchHistory() {
     const searchInput = document.getElementById('searchInput');
     const rect = searchInput.getBoundingClientRect();
-    
+
     // Remove existing dropdown
     const existingDropdown = document.querySelector('.search-history-dropdown');
     if (existingDropdown) {
         existingDropdown.remove();
     }
-    
+
     if (searchHistory.length === 0) return;
-    
+
     const dropdown = createElementFromTemplate('search-history-dropdown-template');
     dropdown.style.cssText = `
         position: absolute;
@@ -791,10 +799,10 @@ function showSearchHistory() {
         max-height: 200px;
         overflow-y: auto;
     `;
-    
+
     // Set up event handlers
     dropdown.querySelector('.clear-history-btn').onclick = clearSearchHistory;
-    
+
     // Add search history items
     const itemsContainer = dropdown.querySelector('.search-history-items');
     searchHistory.forEach(term => {
@@ -804,9 +812,9 @@ function showSearchHistory() {
         item.querySelector('.remove-history-btn').onclick = (event) => removeFromSearchHistory(term, event);
         itemsContainer.appendChild(item);
     });
-    
+
     document.body.appendChild(dropdown);
-    
+
     // Close dropdown when clicking outside
     setTimeout(() => {
         document.addEventListener('click', function closeDropdown(e) {
@@ -822,7 +830,7 @@ function showSearchHistory() {
 function useSearchTerm(term) {
     document.getElementById('searchInput').value = term;
     filterNotes(term);
-    
+
     // Close dropdown
     const dropdown = document.querySelector('.search-history-dropdown');
     if (dropdown) {
@@ -835,7 +843,7 @@ function removeFromSearchHistory(term, event) {
     event.stopPropagation();
     searchHistory = searchHistory.filter(t => t !== term);
     localStorage.setItem('notepy_search_history', JSON.stringify(searchHistory));
-    
+
     // Refresh dropdown
     showSearchHistory();
 }
@@ -844,7 +852,7 @@ function removeFromSearchHistory(term, event) {
 function clearSearchHistory() {
     searchHistory = [];
     localStorage.removeItem('notepy_search_history');
-    
+
     // Close dropdown
     const dropdown = document.querySelector('.search-history-dropdown');
     if (dropdown) {
@@ -855,11 +863,11 @@ function clearSearchHistory() {
 // Toggle pin note
 async function togglePinNote(noteId, event) {
     event.stopPropagation();
-    
+
     try {
         const note = currentNotes.find(n => n.note_id === noteId);
         if (!note) return;
-        
+
         const response = await fetch(`/api/notes/${noteId}`, {
             method: 'PUT',
             headers: {
@@ -872,11 +880,11 @@ async function togglePinNote(noteId, event) {
                 pinned: !note.pinned
             })
         });
-        
+
         if (response.ok) {
             const updatedNote = await response.json();
             showToast(`Note ${updatedNote.pinned ? 'pinned' : 'unpinned'} successfully!`, 'success');
-            
+
             // Reload notes to update display
             await loadNotes();
         } else {
@@ -892,27 +900,27 @@ async function togglePinNote(noteId, event) {
 // Delete note
 async function deleteNote(noteId, event) {
     event.stopPropagation();
-    
+
     showDeleteConfirmModal(noteId);
 }
 
 // Show delete confirmation modal
 function showDeleteConfirmModal(noteId) {
     const modal = createElementFromTemplate('delete-modal-template');
-    
+
     // Set up event handlers
     modal.querySelector('.cancel-btn').onclick = closeDeleteModal;
     modal.querySelector('.confirm-btn').onclick = () => confirmDeleteNote(noteId);
-    
+
     document.body.appendChild(modal);
-    
+
     // Close modal when clicking outside
-    modal.addEventListener('click', function(e) {
+    modal.addEventListener('click', function (e) {
         if (e.target === modal) {
             closeDeleteModal();
         }
     });
-    
+
     // Close modal with ESC key
     document.addEventListener('keydown', function handleEsc(e) {
         if (e.key === 'Escape') {
@@ -936,15 +944,15 @@ async function confirmDeleteNote(noteId) {
         const response = await fetch(`/api/notes/${noteId}`, {
             method: 'DELETE'
         });
-        
+
         if (response.ok) {
             showToast('Note deleted successfully!', 'success');
-            
+
             // If the deleted note was currently selected, clear selection
             if (currentNoteId === noteId) {
                 createNewNote();
             }
-            
+
             // Reload notes and tags
             await loadNotes();
             await loadTags();
@@ -964,19 +972,22 @@ async function confirmDeleteNote(noteId) {
 function selectNote(noteId, event) {
     const note = currentNotes.find(n => n.note_id === noteId);
     if (!note) return;
-    
+
     currentNoteId = noteId;
     setEditableTitle(note.title);
-    
+
+    // Show editor for selected note
+    showEditor();
+
     // Set editor content
     if (editor) {
         editor.root.innerHTML = note.content;
     }
-    
+
     // Show tag management section
     document.getElementById('tagManagement').style.display = 'block';
     displayCurrentTags(note.tags || []);
-    
+
     // Update active state
     document.querySelectorAll('.note-item').forEach(item => {
         item.classList.remove('active');
@@ -984,7 +995,7 @@ function selectNote(noteId, event) {
     if (event && event.currentTarget) {
         event.currentTarget.classList.add('active');
     }
-    
+
     // Update word count and last saved
     updateWordCount();
     updateLastSaved(note.updated_at);
@@ -994,19 +1005,22 @@ function selectNote(noteId, event) {
 function createNewNote() {
     currentNoteId = null;
     setEditableTitle('New Note');
-    
+
     if (editor) {
         editor.root.innerHTML = '';
     }
-    
+
+    // Show editor for new note
+    showEditor();
+
     // Hide tag management for new notes
     document.getElementById('tagManagement').style.display = 'none';
-    
+
     // Remove active state from all items
     document.querySelectorAll('.note-item').forEach(item => {
         item.classList.remove('active');
     });
-    
+
     // Update word count
     updateWordCount();
     updateLastSaved();
@@ -1016,7 +1030,7 @@ function createNewNote() {
 function displayCurrentTags(tags) {
     const container = document.getElementById('currentTags');
     container.innerHTML = '';
-    
+
     tags.forEach(tag => {
         const tagElement = createElementFromTemplate('current-tag-template');
         tagElement.querySelector('.tag-text').textContent = tag;
@@ -1031,12 +1045,12 @@ async function addTagToNote() {
         showToast('Please save the note first', 'warning');
         return;
     }
-    
+
     const tagInput = document.getElementById('tagInput');
     const tag = tagInput.value.trim();
-    
+
     if (!tag) return;
-    
+
     try {
         const response = await fetch(`/api/notes/${currentNoteId}/tags`, {
             method: 'POST',
@@ -1045,13 +1059,13 @@ async function addTagToNote() {
             },
             body: JSON.stringify({ tag: tag })
         });
-        
+
         if (response.ok) {
             const updatedNote = await response.json();
             displayCurrentTags(updatedNote.tags || []);
             tagInput.value = '';
             showToast(`Tag "${tag}" added successfully`);
-            
+
             // Reload tags and notes
             await loadTags();
             await loadNotes();
@@ -1068,17 +1082,17 @@ async function addTagToNote() {
 // Remove tag from current note
 async function removeTagFromNote(tag) {
     if (!currentNoteId) return;
-    
+
     try {
         const response = await fetch(`/api/notes/${currentNoteId}/tags/${encodeURIComponent(tag)}`, {
             method: 'DELETE'
         });
-        
+
         if (response.ok) {
             const updatedNote = await response.json();
             displayCurrentTags(updatedNote.tags || []);
             showToast(`Tag "${tag}" removed successfully`);
-            
+
             // Reload tags and notes
             await loadTags();
             await loadNotes();
@@ -1097,7 +1111,7 @@ function scheduleAutoSave() {
     if (autoSaveTimeout) {
         clearTimeout(autoSaveTimeout);
     }
-    
+
     autoSaveTimeout = setTimeout(() => {
         saveCurrentNote(true);
     }, 2000); // Auto-save after 2 seconds of inactivity
@@ -1109,12 +1123,12 @@ async function saveCurrentNote(isAutoSave = false) {
         showToast('Editor not initialized', 'error');
         return;
     }
-    
+
     const content = editor.root.innerHTML;
     const titleElement = document.getElementById('editorTitle');
     const titleText = titleElement.querySelector('.title-text');
     const title = titleText ? titleText.textContent : titleElement.textContent;
-    
+
     if (!title || title === 'Select a note or create a new one' || title === 'New Note') {
         if (!isAutoSave) {
             showToast('Please enter a title for your note', 'warning');
@@ -1122,21 +1136,21 @@ async function saveCurrentNote(isAutoSave = false) {
         }
         return;
     }
-    
+
     if (isAutoSave) {
         showSaveIndicator('Saving...', 'saving');
     }
-    
+
     try {
         const noteData = {
             title: title,
             content: content,
             tags: []
         };
-        
+
         const url = currentNoteId ? `/api/notes/${currentNoteId}` : '/api/notes';
         const method = currentNoteId ? 'PUT' : 'POST';
-        
+
         const response = await fetch(url, {
             method: method,
             headers: {
@@ -1144,25 +1158,25 @@ async function saveCurrentNote(isAutoSave = false) {
             },
             body: JSON.stringify(noteData)
         });
-        
+
         if (response.ok) {
             const savedNote = await response.json();
-            
+
             if (!currentNoteId) {
                 currentNoteId = savedNote.note_id;
                 // Show tag management for newly created notes
                 document.getElementById('tagManagement').style.display = 'block';
             }
-            
+
             // Reload notes to get updated list
             await loadNotes();
             await loadTags();
-            
+
             if (!isAutoSave) {
                 showSaveIndicator('Note saved successfully!');
                 showToast('Note saved successfully!', 'success');
             }
-            
+
             updateLastSaved(savedNote.updated_at);
         } else {
             let errorMessage = 'Unknown error occurred';
@@ -1172,10 +1186,10 @@ async function saveCurrentNote(isAutoSave = false) {
             } catch (parseError) {
                 errorMessage = `HTTP ${response.status}: ${response.statusText}`;
             }
-            
+
             showSaveIndicator(`Error: ${errorMessage}`, 'error');
             showToast(`Save failed: ${errorMessage}`, 'error');
-            
+
             // Log detailed error for debugging
             console.error('Save error details:', {
                 status: response.status,
@@ -1196,7 +1210,7 @@ async function saveCurrentNote(isAutoSave = false) {
 function toggleFullscreen() {
     const container = document.querySelector('.editor-container');
     const btn = document.getElementById('fullscreenBtn');
-    
+
     if (container.classList.contains('fullscreen')) {
         exitFullscreen();
     } else {
@@ -1208,16 +1222,16 @@ function toggleFullscreen() {
 function enterFullscreen() {
     const container = document.querySelector('.editor-container');
     const btn = document.getElementById('fullscreenBtn');
-    
+
     container.classList.add('fullscreen');
     btn.textContent = '⛶';
     btn.title = 'Exit Fullscreen';
-    
+
     // Focus the editor in fullscreen
     if (editor) {
         editor.focus();
     }
-    
+
     // Add ESC key listener for fullscreen
     document.addEventListener('keydown', handleFullscreenKeydown);
 }
@@ -1226,11 +1240,11 @@ function enterFullscreen() {
 function exitFullscreen() {
     const container = document.querySelector('.editor-container');
     const btn = document.getElementById('fullscreenBtn');
-    
+
     container.classList.remove('fullscreen');
     btn.textContent = '⛶';
     btn.title = 'Enter Fullscreen';
-    
+
     // Remove ESC key listener
     document.removeEventListener('keydown', handleFullscreenKeydown);
 }
@@ -1245,11 +1259,11 @@ function handleFullscreenKeydown(e) {
 // Update word and character count
 function updateWordCount() {
     if (!editor) return;
-    
+
     const text = editor.getText();
     const words = text.trim() ? text.trim().split(/\s+/).length : 0;
     const chars = text.length;
-    
+
     document.getElementById('wordCount').textContent = `${words} words`;
     document.getElementById('charCount').textContent = `${chars} characters`;
 }
@@ -1276,7 +1290,7 @@ function showSaveIndicator(message, type = 'success') {
     const indicator = document.getElementById('saveIndicator');
     indicator.textContent = message;
     indicator.className = 'save-indicator show ' + type;
-    
+
     setTimeout(() => {
         indicator.classList.remove('show');
     }, 3000);
@@ -1285,17 +1299,17 @@ function showSaveIndicator(message, type = 'success') {
 // Enhanced toast notifications
 function showToast(message, type = 'success') {
     const container = document.getElementById('toastContainer');
-    
+
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.textContent = message;
     container.appendChild(toast);
-    
+
     // Show toast with animation
     setTimeout(() => {
         toast.classList.add('show');
     }, 10);
-    
+
     // Hide toast after 3 seconds
     setTimeout(() => {
         toast.classList.remove('show');
@@ -1310,18 +1324,18 @@ function showToast(message, type = 'success') {
 // Set editable title with inline editing functionality
 function setEditableTitle(title) {
     const titleElement = document.getElementById('editorTitle');
-    
+
     if (!titleElement) {
         console.error('editorTitle element not found');
         return;
     }
-    
+
     // Create title text span
     const titleText = document.createElement('span');
     titleText.className = 'title-text';
     titleText.textContent = title;
     titleText.onclick = startTitleEdit;
-    
+
     // Create title input
     const titleInput = document.createElement('input');
     titleInput.type = 'text';
@@ -1330,7 +1344,7 @@ function setEditableTitle(title) {
     titleInput.style.display = 'none';
     titleInput.onblur = saveTitleEdit;
     titleInput.onkeydown = handleTitleKeydown;
-    
+
     titleElement.innerHTML = '';
     titleElement.appendChild(titleText);
     titleElement.appendChild(titleInput);
@@ -1339,16 +1353,16 @@ function setEditableTitle(title) {
 // Start title editing
 function startTitleEdit() {
     const titleElement = document.getElementById('editorTitle');
-    
+
     if (!titleElement) {
         console.error('editorTitle element not found');
         return;
     }
-    
+
     // Check if the editable structure exists, if not create it
     let titleText = titleElement.querySelector('.title-text');
     let titleInput = titleElement.querySelector('.title-input');
-    
+
     if (!titleText || !titleInput) {
         // Create the editable structure
         const currentTitle = titleElement.textContent || 'New Note';
@@ -1356,7 +1370,7 @@ function startTitleEdit() {
         titleText = titleElement.querySelector('.title-text');
         titleInput = titleElement.querySelector('.title-input');
     }
-    
+
     if (titleText && titleInput) {
         titleText.style.display = 'none';
         titleInput.style.display = 'block';
@@ -1368,21 +1382,21 @@ function startTitleEdit() {
 // Save title edit
 async function saveTitleEdit() {
     const titleElement = document.getElementById('editorTitle');
-    
+
     if (!titleElement) {
         console.error('editorTitle element not found');
         return;
     }
-    
+
     const titleText = titleElement.querySelector('.title-text');
     const titleInput = titleElement.querySelector('.title-input');
-    
+
     if (!titleText || !titleInput) {
         return; // Elements don't exist, can't save
     }
-    
+
     const newTitle = titleInput.value.trim();
-    
+
     if (!newTitle) {
         // Revert to original title if empty
         titleInput.value = titleText.textContent;
@@ -1390,12 +1404,12 @@ async function saveTitleEdit() {
         titleInput.style.display = 'none';
         return;
     }
-    
+
     // Update display
     titleText.textContent = newTitle;
     titleText.style.display = 'block';
     titleInput.style.display = 'none';
-    
+
     // Auto-save the note with new title
     if (currentNoteId) {
         await saveCurrentNote(true);
@@ -1410,15 +1424,15 @@ function handleTitleKeydown(event) {
     } else if (event.key === 'Escape') {
         event.preventDefault();
         const titleElement = document.getElementById('editorTitle');
-        
+
         if (!titleElement) {
             console.error('editorTitle element not found');
             return;
         }
-        
+
         const titleText = titleElement.querySelector('.title-text');
         const titleInput = titleElement.querySelector('.title-input');
-        
+
         if (titleText && titleInput) {
             // Revert to original title
             titleInput.value = titleText.textContent;
@@ -1431,16 +1445,16 @@ function handleTitleKeydown(event) {
 // Show keyboard shortcuts help modal
 function showKeyboardShortcuts() {
     const modal = createElementFromTemplate('keyboard-shortcuts-template');
-    
+
     // Set up event handlers
     modal.querySelectorAll('.close-btn').forEach(btn => {
         btn.onclick = closeShortcutsModal;
     });
-    
+
     document.body.appendChild(modal);
-    
+
     // Close modal when clicking outside
-    modal.addEventListener('click', function(e) {
+    modal.addEventListener('click', function (e) {
         if (e.target === modal) {
             closeShortcutsModal();
         }
@@ -1458,27 +1472,27 @@ function closeShortcutsModal() {
 // Show export menu
 function showExportMenu() {
     const modal = createElementFromTemplate('export-modal-template');
-    
+
     // Set up event handlers
     modal.querySelectorAll('.close-btn').forEach(btn => {
         btn.onclick = closeExportModal;
     });
-    
+
     modal.querySelector('.export-all-json').onclick = () => exportAllNotes('json');
     modal.querySelector('.export-all-markdown').onclick = () => exportAllNotes('markdown');
     modal.querySelector('.export-current-json').onclick = () => exportCurrentNote('json');
     modal.querySelector('.export-current-markdown').onclick = () => exportCurrentNote('markdown');
-    
+
     // Disable current note export buttons if no note is selected
     if (!currentNoteId) {
         modal.querySelector('.export-current-json').disabled = true;
         modal.querySelector('.export-current-markdown').disabled = true;
     }
-    
+
     document.body.appendChild(modal);
-    
+
     // Close modal when clicking outside
-    modal.addEventListener('click', function(e) {
+    modal.addEventListener('click', function (e) {
         if (e.target === modal) {
             closeExportModal();
         }
@@ -1497,7 +1511,7 @@ function closeExportModal() {
 async function exportAllNotes(format) {
     try {
         const response = await fetch(`/api/export?format=${format}`);
-        
+
         if (response.ok) {
             if (format === 'json') {
                 const data = await response.json();
@@ -1517,7 +1531,7 @@ async function exportAllNotes(format) {
                 a.click();
                 URL.revokeObjectURL(url);
             }
-            
+
             showToast(`All notes exported as ${format.toUpperCase()} successfully!`, 'success');
             closeExportModal();
         } else {
@@ -1536,10 +1550,10 @@ async function exportCurrentNote(format) {
         showToast('No note selected for export', 'warning');
         return;
     }
-    
+
     try {
         const response = await fetch(`/api/notes/${currentNoteId}/export?format=${format}`);
-        
+
         if (response.ok) {
             if (format === 'json') {
                 const data = await response.json();
@@ -1559,7 +1573,7 @@ async function exportCurrentNote(format) {
                 a.click();
                 URL.revokeObjectURL(url);
             }
-            
+
             showToast(`Note exported as ${format.toUpperCase()} successfully!`, 'success');
             closeExportModal();
         } else {
@@ -1575,40 +1589,40 @@ async function exportCurrentNote(format) {
 // Show import dialog
 function showImportDialog() {
     const modal = createElementFromTemplate('import-modal-template');
-    
+
     // Set up event handlers
     modal.querySelectorAll('.close-btn').forEach(btn => {
         btn.onclick = closeImportModal;
     });
-    
+
     modal.querySelector('.cancel-btn').onclick = closeImportModal;
     modal.querySelector('.import-btn').onclick = importNotes;
-    
+
     // Set up file input change handler
     const fileInput = modal.querySelector('#importFile');
     fileInput.onchange = handleImportFile;
-    
+
     document.body.appendChild(modal);
-    
+
     // Close modal when clicking outside
-    modal.addEventListener('click', function(e) {
+    modal.addEventListener('click', function (e) {
         if (e.target === modal) {
             closeImportModal();
         }
     });
-    
+
     // Drag and drop functionality
     const label = modal.querySelector('.file-input-label');
-    
+
     label.addEventListener('dragover', (e) => {
         e.preventDefault();
         label.classList.add('drag-over');
     });
-    
+
     label.addEventListener('dragleave', () => {
         label.classList.remove('drag-over');
     });
-    
+
     label.addEventListener('drop', (e) => {
         e.preventDefault();
         label.classList.remove('drag-over');
@@ -1632,9 +1646,9 @@ function closeImportModal() {
 function handleImportFile(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         try {
             const data = JSON.parse(e.target.result);
             if (data.notes && Array.isArray(data.notes)) {
@@ -1654,33 +1668,33 @@ function handleImportFile(event) {
 function showImportPreview(notes) {
     const preview = document.getElementById('importPreview');
     const content = document.getElementById('importPreviewContent');
-    
+
     // Create preview list container
     const previewList = document.createElement('div');
     previewList.className = 'import-preview-list';
-    
+
     notes.forEach(note => {
         const previewItem = createElementFromTemplate('import-preview-item-template');
         previewItem.querySelector('.import-preview-title').textContent = note.title;
         previewItem.querySelector('.import-preview-content-length').textContent = `${note.content ? note.content.length : 0} characters`;
-        
+
         if (note.tags && note.tags.length > 0) {
             const tagsText = note.tags.join(', ');
             previewItem.querySelector('.import-preview-tags').textContent = tagsText;
         }
-        
+
         previewList.appendChild(previewItem);
     });
-    
+
     // Create summary
     const summary = document.createElement('div');
     summary.className = 'import-preview-summary';
     summary.innerHTML = `<strong>${notes.length}</strong> notes ready to import`;
-    
+
     content.innerHTML = '';
     content.appendChild(previewList);
     content.appendChild(summary);
-    
+
     preview.style.display = 'block';
 }
 
@@ -1688,12 +1702,12 @@ function showImportPreview(notes) {
 async function importNotes() {
     const file = document.getElementById('importFile').files[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
-    reader.onload = async function(e) {
+    reader.onload = async function (e) {
         try {
             const data = JSON.parse(e.target.result);
-            
+
             const response = await fetch('/api/import', {
                 method: 'POST',
                 headers: {
@@ -1701,19 +1715,19 @@ async function importNotes() {
                 },
                 body: JSON.stringify(data)
             });
-            
+
             if (response.ok) {
                 const result = await response.json();
                 showToast(`Successfully imported ${result.imported_count} notes!`, 'success');
-                
+
                 if (result.errors && result.errors.length > 0) {
                     console.warn('Import errors:', result.errors);
                 }
-                
+
                 // Reload notes and tags
                 await loadNotes();
                 await loadTags();
-                
+
                 closeImportModal();
             } else {
                 const error = await response.json();
@@ -1732,33 +1746,33 @@ function initializeTouchGestures() {
     let startX = 0;
     let startY = 0;
     let isSwiping = false;
-    
+
     // Swipe to toggle sidebar
-    document.addEventListener('touchstart', function(e) {
+    document.addEventListener('touchstart', function (e) {
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
         isSwiping = false;
     });
-    
-    document.addEventListener('touchmove', function(e) {
+
+    document.addEventListener('touchmove', function (e) {
         if (!startX || !startY) return;
-        
+
         const deltaX = e.touches[0].clientX - startX;
         const deltaY = e.touches[0].clientY - startY;
-        
+
         // Check if it's a horizontal swipe
         if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
             isSwiping = true;
             e.preventDefault();
         }
     });
-    
-    document.addEventListener('touchend', function(e) {
+
+    document.addEventListener('touchend', function (e) {
         if (!isSwiping) return;
-        
+
         const deltaX = e.changedTouches[0].clientX - startX;
         const sidebar = document.getElementById('sidebar');
-        
+
         // Swipe right to open sidebar
         if (deltaX > 100 && window.innerWidth <= 768) {
             sidebar.classList.remove('collapsed');
@@ -1767,18 +1781,18 @@ function initializeTouchGestures() {
         else if (deltaX < -100 && window.innerWidth <= 768) {
             sidebar.classList.add('collapsed');
         }
-        
+
         startX = 0;
         startY = 0;
         isSwiping = false;
     });
-    
+
     // Double tap to toggle fullscreen
     let lastTap = 0;
-    document.addEventListener('touchend', function(e) {
+    document.addEventListener('touchend', function (e) {
         const currentTime = new Date().getTime();
         const tapLength = currentTime - lastTap;
-        
+
         if (tapLength < 500 && tapLength > 0) {
             // Double tap detected
             const editorContainer = document.querySelector('.editor-container');
@@ -1791,8 +1805,29 @@ function initializeTouchGestures() {
 }
 
 // Utility function to escape HTML
+// Show/hide editor functions
+function hideEditor() {
+    const editorContainer = document.querySelector('.editor-container');
+    const editorHeader = document.querySelector('.editor-header');
+    const tagManagement = document.getElementById('tagManagement');
+
+    if (editorContainer) editorContainer.style.display = 'none';
+    if (editorHeader) editorHeader.style.display = 'none';
+    if (tagManagement) tagManagement.style.display = 'none';
+}
+
+function showEditor() {
+    const editorContainer = document.querySelector('.editor-container');
+    const editorHeader = document.querySelector('.editor-header');
+
+    if (editorContainer) editorContainer.style.display = 'block';
+    if (editorHeader) editorHeader.style.display = 'flex';
+}
+
+
+
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
-} 
+}

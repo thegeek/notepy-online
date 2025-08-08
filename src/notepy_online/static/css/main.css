@@ -143,6 +143,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    justify-content: space-between;
 }
 
 .form-group {
@@ -489,6 +490,62 @@ body {
     margin-bottom: 2rem;
 }
 
+/* New Note Button - Distinct styling for main page */
+.new-note-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+}
+
+.new-note-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.new-note-button:hover::before {
+    left: 100%;
+}
+
+.new-note-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.4);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.new-note-button:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+}
+
+.new-note-button .note-item-title {
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.new-note-button .note-item-preview {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    font-weight: 400;
+}
+
 .loading-spinner {
     display: inline-block;
     width: 20px;
@@ -584,32 +641,32 @@ body {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
-    
+
     .hero-title {
         font-size: 2.5rem;
     }
-    
+
     .hero-subtitle {
         font-size: 1.1rem;
     }
-    
+
     .notes-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    
+
     .delete-content {
         width: 95%;
         padding: 1.5rem;
     }
-    
+
     .delete-footer {
         flex-direction: column;
     }
-    
+
     .delete-footer .btn {
         min-width: auto;
     }
@@ -689,4 +746,4 @@ body {
         opacity: 1;
         transform: scale(1) translateY(0);
     }
-} 
+}
