@@ -1184,13 +1184,27 @@ function updateLastSaved(timestamp = null) {
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const sidebarToggle = document.getElementById('sidebarToggle');
-    sidebar.classList.toggle('collapsed');
 
-    // Show/hide the separate toggle button
     if (sidebar.classList.contains('collapsed')) {
-        sidebarToggle.style.display = 'block';
-    } else {
+        // Opening the sidebar
+        sidebar.classList.remove('collapsed');
         sidebarToggle.style.display = 'none';
+
+        // Delay showing content until animation is complete
+        setTimeout(() => {
+            sidebar.style.opacity = '1';
+            sidebar.style.pointerEvents = 'auto';
+        }, 300); // Match the transition duration
+    } else {
+        // Closing the sidebar - hide content immediately
+        sidebar.style.opacity = '0';
+        sidebar.style.pointerEvents = 'none';
+
+        // Start width contraction after content is hidden
+        setTimeout(() => {
+            sidebar.classList.add('collapsed');
+            sidebarToggle.style.display = 'block';
+        }, 100); // Longer delay to ensure content is hidden
     }
 }
 

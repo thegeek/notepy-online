@@ -43,15 +43,13 @@ EDITOR_STYLES = """
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transition: flex-basis 0.3s ease;
+    transition: flex-basis 0.3s ease, opacity 0.3s ease;
 }
 
 .sidebar.collapsed {
     flex: 0 0 0;
     margin: 0;
     overflow: hidden;
-    opacity: 0;
-    pointer-events: none;
 }
 
 .sidebar-toggle {
@@ -776,7 +774,7 @@ MAIN_PAGE = f"""
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
-    <link rel="stylesheet" href="/static/css/editor.css?v=1.6">
+    <link rel="stylesheet" href="/static/css/editor.css?v=1.7">
     {EDITOR_STYLES}
 </head>
 <body>
@@ -1102,7 +1100,7 @@ MAIN_PAGE = f"""
         </div>
     </script>
 
-    <script src="/static/js/editor.js?v=3.0"></script>
+    <script src="/static/js/editor.js?v=3.3"></script>
 </body>
 </html>
 """
