@@ -1,5 +1,6 @@
 """Tests for the Notepy Online CLI functionality."""
 
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -580,6 +581,13 @@ class TestCLI:
             "created_at": "2024-01-01T00:00:00+00:00",
             "updated_at": "2024-01-01T00:00:00+00:00",
         }
+        # Set up mock note attributes that the CLI code accesses
+        mock_note.note_id = "test-id"
+        mock_note.title = "Test Note"
+        mock_note.content = "Test content"
+        mock_note.tags = ["test"]
+        mock_note.created_at = datetime.fromisoformat("2024-01-01T00:00:00+00:00")
+        mock_note.updated_at = datetime.fromisoformat("2024-01-01T00:00:00+00:00")
         mock_note_manager.return_value.get_note.return_value = mock_note
 
         result = cli_runner.invoke(
@@ -811,6 +819,13 @@ class TestCLIErrorHandling:
             "created_at": "2024-01-01T00:00:00+00:00",
             "updated_at": "2024-01-01T00:00:00+00:00",
         }
+        # Set up mock note attributes that the CLI code accesses
+        mock_note.note_id = "search-1"
+        mock_note.title = "Searchable Note"
+        mock_note.content = "Content"
+        mock_note.tags = ["search"]
+        mock_note.created_at = datetime.fromisoformat("2024-01-01T00:00:00+00:00")
+        mock_note.updated_at = datetime.fromisoformat("2024-01-01T00:00:00+00:00")
         mock_note_manager.return_value.list_notes.return_value = [mock_note]
 
         output_file = temp_dir / "search_results.json"
@@ -1067,6 +1082,13 @@ class TestCLIErrorHandling:
             "created_at": "2024-01-01T00:00:00+00:00",
             "updated_at": "2024-01-01T00:00:00+00:00",
         }
+        # Set up mock note attributes that the CLI code accesses
+        mock_note.note_id = "test-id"
+        mock_note.title = "Test Note"
+        mock_note.content = "Test content"
+        mock_note.tags = ["test"]
+        mock_note.created_at = datetime.fromisoformat("2024-01-01T00:00:00+00:00")
+        mock_note.updated_at = datetime.fromisoformat("2024-01-01T00:00:00+00:00")
         mock_note_manager.return_value.list_notes.return_value = [mock_note]
 
         output_file = temp_dir / "notes.json"
@@ -1097,6 +1119,13 @@ class TestCLIErrorHandling:
             "created_at": "2024-01-01T00:00:00+00:00",
             "updated_at": "2024-01-01T00:00:00+00:00",
         }
+        # Set up mock note attributes that the CLI code accesses
+        mock_note.note_id = "test-id"
+        mock_note.title = "Test Note"
+        mock_note.content = "Test content"
+        mock_note.tags = ["test"]
+        mock_note.created_at = datetime.fromisoformat("2024-01-01T00:00:00+00:00")
+        mock_note.updated_at = datetime.fromisoformat("2024-01-01T00:00:00+00:00")
         mock_note_manager.return_value.get_note.return_value = mock_note
 
         output_file = temp_dir / "note.json"

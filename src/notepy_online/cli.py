@@ -251,6 +251,8 @@ def list_notes(
 
         if output:
             data = [note.to_dict() for note in notes]
+            # Ensure output directory exists
+            output.parent.mkdir(parents=True, exist_ok=True)
             with open(output, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2 if pretty else None, ensure_ascii=False)
             click.echo(f"✅ Notes exported to: {output}")
@@ -298,6 +300,8 @@ def show(note_id: str, output: Path | None, pretty: bool) -> None:
             raise click.Abort()
 
         if output:
+            # Ensure output directory exists
+            output.parent.mkdir(parents=True, exist_ok=True)
             with open(output, "w", encoding="utf-8") as f:
                 json.dump(
                     note.to_dict(), f, indent=2 if pretty else None, ensure_ascii=False
@@ -399,6 +403,8 @@ def search(query: str, output: Path | None, pretty: bool) -> None:
 
         if output:
             data = [note.to_dict() for note in notes]
+            # Ensure output directory exists
+            output.parent.mkdir(parents=True, exist_ok=True)
             with open(output, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2 if pretty else None, ensure_ascii=False)
             click.echo(f"✅ Search results exported to: {output}")

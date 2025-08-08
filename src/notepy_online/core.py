@@ -66,18 +66,22 @@ class Note:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Note":
+    def from_dict(cls, data: dict[str, Any], content: str = "") -> "Note":
         """Create note from dictionary.
 
         Args:
             data: Dictionary containing note data
+            content: Note content (loaded separately, falls back to data["content"] if not provided)
 
         Returns:
             Note instance
         """
+        # Use content from data if not provided separately
+        note_content = content if content else data.get("content", "")
+
         return cls(
             title=data["title"],
-            content=data.get("content", ""),
+            content=note_content,
             tags=data.get("tags", []),
             note_id=data["note_id"],
             created_at=datetime.fromisoformat(data["created_at"]),
@@ -162,13 +166,45 @@ class NoteManager:
             try:
                 with open(self.notes_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    self.notes = {
-                        note_id: Note.from_dict(note_data)
-                        for note_id, note_data in data.items()
-                    }
+                    self.notes = {}
+                    for note_id, note_data in data.items():
+                        content = self._load_note_content(note_id)
+                        self.notes[note_id] = Note.from_dict(note_data, content)
             except Exception as e:
                 print(f"Warning: Failed to load notes: {e}")
                 self.notes = {}
+
+    def _load_note_content(self, note_id: str) -> str:
+        """Load note content from markdown file.
+
+        Args:
+            note_id: Note identifier
+
+        Returns:
+            Note content as string
+        """
+        content_file = self.resource_manager.notes_dir / f"{note_id}.md"
+        if content_file.exists():
+            try:
+                with open(content_file, "r", encoding="utf-8") as f:
+                    return f.read()
+            except Exception as e:
+                print(f"Warning: Failed to load content for note {note_id}: {e}")
+        return ""
+
+    def _save_note_content(self, note_id: str, content: str) -> None:
+        """Save note content to markdown file.
+
+        Args:
+            note_id: Note identifier
+            content: Note content to save
+        """
+        content_file = self.resource_manager.notes_dir / f"{note_id}.md"
+        try:
+            with open(content_file, "w", encoding="utf-8") as f:
+                f.write(content)
+        except Exception as e:
+            raise RuntimeError(f"Failed to save note content: {e}")
 
     def _save_notes(self) -> None:
         """Save notes to storage."""
@@ -176,6 +212,10 @@ class NoteManager:
             data = {note_id: note.to_dict() for note_id, note in self.notes.items()}
             with open(self.notes_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
+
+            # Save content files
+            for note_id, note in self.notes.items():
+                self._save_note_content(note_id, note.content)
         except Exception as e:
             raise RuntimeError(f"Failed to save notes: {e}")
 
@@ -244,6 +284,17 @@ class NoteManager:
         if note_id in self.notes:
             del self.notes[note_id]
             self._save_notes()
+
+            # Delete content file
+            content_file = self.resource_manager.notes_dir / f"{note_id}.md"
+            if content_file.exists():
+                try:
+                    content_file.unlink()
+                except Exception as e:
+                    print(
+                        f"Warning: Failed to delete content file for note {note_id}: {e}"
+                    )
+
             return True
         return False
 
@@ -298,7 +349,12 @@ class NoteManager:
         Args:
             file_path: Path to export file
         """
-        data = {note_id: note.to_dict() for note_id, note in self.notes.items()}
+        data = {}
+        for note_id, note in self.notes.items():
+            note_data = note.to_dict()
+            note_data["content"] = note.content  # Include content in export
+            data[note_id] = note_data
+
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
@@ -317,7 +373,9 @@ class NoteManager:
         imported_count = 0
         for note_id, note_data in data.items():
             try:
-                note = Note.from_dict(note_data)
+                # Extract content from import data (if present)
+                content = note_data.get("content", "")
+                note = Note.from_dict(note_data, content)
                 self.notes[note.note_id] = note  # Use new ID to avoid conflicts
                 imported_count += 1
             except Exception as e:
