@@ -25,6 +25,217 @@ powerful functionality for note-taking and management.
 # CSS styles shared across pages - now loaded from external file
 COMMON_STYLES = '<link rel="stylesheet" href="/static/css/main.css">'
 
+EDITOR_STYLES = """
+<style>
+/* Add breathing room around containers */
+.app-container {
+    padding: 1rem;
+    gap: 1rem;
+}
+
+.sidebar {
+    margin: 0.5rem;
+    border-radius: 12px;
+}
+
+.main-content {
+    margin: 0.5rem;
+    border-radius: 12px;
+}
+
+.editor-container {
+    margin: 0.5rem 0;
+    border-radius: 8px;
+}
+
+.ql-editor {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.3;
+    color: #ffffff;
+    background: #0a0a0a;
+    min-height: 400px;
+    padding: 2rem;
+}
+.ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4, .ql-editor h5, .ql-editor h6 {
+    color: #ffffff;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+.ql-editor h1 { font-size: 2rem; }
+.ql-editor h2 { font-size: 1.75rem; }
+.ql-editor h3 { font-size: 1.5rem; }
+.ql-editor p { margin-bottom: 0.5rem; }
+.ql-editor ul, .ql-editor ol { margin-bottom: 1rem; padding-left: 2rem; }
+.ql-editor li { margin-bottom: 0.5rem; }
+.ql-editor code {
+    background: #2a2a2a;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+.ql-editor pre {
+    background: #2a2a2a;
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+.ql-editor pre code {
+    background: none;
+    padding: 0;
+}
+.ql-editor blockquote {
+    border-left: 4px solid #667eea;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: #a0a0a0;
+    font-style: italic;
+}
+.ql-editor table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1rem 0;
+}
+.ql-editor table td, .ql-editor table th {
+    border: 1px solid #3a3a3a;
+    padding: 0.5rem;
+    text-align: left;
+}
+.ql-editor table th {
+    background: #2a2a2a;
+    font-weight: 600;
+}
+
+/* Enhanced dark theme for toolbar */
+.ql-toolbar.ql-snow {
+    border: 1px solid #333;
+    background: #1a1a1a;
+    border-radius: 8px 8px 0 0;
+}
+.ql-toolbar.ql-snow .ql-stroke {
+    stroke: #ffffff;
+}
+.ql-toolbar.ql-snow .ql-fill {
+    fill: #ffffff;
+}
+.ql-toolbar.ql-snow .ql-picker {
+    color: #ffffff;
+}
+.ql-toolbar.ql-snow .ql-picker-options {
+    background: #1a1a1a;
+    border: 1px solid #333;
+}
+.ql-toolbar.ql-snow .ql-picker-item {
+    color: #ffffff;
+}
+.ql-toolbar.ql-snow .ql-picker-item.ql-selected {
+    color: #667eea;
+}
+.ql-container.ql-snow {
+    border: 1px solid #333;
+    background: #0a0a0a;
+    border-radius: 0 0 8px 8px;
+}
+
+/* Fix placeholder color */
+.ql-editor.ql-blank::before {
+    color: #666 !important;
+}
+
+/* Tighter spacing for consecutive paragraphs */
+.ql-editor p + p {
+    margin-top: 0.25rem;
+}
+
+/* Reduce spacing for empty paragraphs (br tags) */
+.ql-editor p:has(br:only-child) {
+    margin-bottom: 0.25rem;
+}
+
+/* Add breathing room to editor header */
+.editor-header {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+}
+
+/* Add breathing room to search section */
+.search-section {
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* Add breathing room to tag filter section */
+.tag-filter-section {
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* Add breathing room to notes list */
+.notes-list {
+    padding: 0.5rem;
+}
+
+/* Add breathing room to sidebar header */
+.sidebar-header {
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* Empty editor state styling */
+.empty-editor-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    text-align: center;
+    color: #666;
+    padding: 2rem;
+}
+
+.empty-editor-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.7;
+}
+
+.empty-editor-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #888;
+    margin-bottom: 0.5rem;
+}
+
+.empty-editor-message {
+    font-size: 1rem;
+    color: #666;
+    line-height: 1.5;
+    margin-bottom: 2rem;
+    max-width: 400px;
+}
+
+.empty-editor-action {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.empty-editor-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+</style>
+"""
+
 # Welcome page HTML (now becomes STATUS_PAGE)
 STATUS_PAGE = f"""
 <!DOCTYPE html>
@@ -486,7 +697,7 @@ STATUS_PAGE = f"""
 """
 
 # Main page with WYSIWYG editor
-MAIN_PAGE = """
+MAIN_PAGE = f"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -500,6 +711,7 @@ MAIN_PAGE = """
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
     <link rel="stylesheet" href="/static/css/editor.css?v=1.1">
+    {EDITOR_STYLES}
 </head>
 <body>
     <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
@@ -823,7 +1035,7 @@ MAIN_PAGE = """
         </div>
     </script>
 
-    <script src="/static/js/editor.js?v=2.2"></script>
+    <script src="/static/js/editor.js?v=2.6"></script>
 </body>
 </html>
 """

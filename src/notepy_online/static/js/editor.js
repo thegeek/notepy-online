@@ -144,116 +144,6 @@ function initializeEditor() {
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    // Enhanced dark theme styling
-    const style = document.createElement('style');
-    style.textContent = `
-        .ql-editor {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            font-size: 16px;
-            line-height: 1.3;
-            color: #ffffff;
-            background: #0a0a0a;
-            min-height: 400px;
-            padding: 2rem;
-        }
-        .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4, .ql-editor h5, .ql-editor h6 {
-            color: #ffffff;
-            margin-top: 1.5rem;
-            margin-bottom: 1rem;
-        }
-        .ql-editor h1 { font-size: 2rem; }
-        .ql-editor h2 { font-size: 1.75rem; }
-        .ql-editor h3 { font-size: 1.5rem; }
-        .ql-editor p { margin-bottom: 0.5rem; }
-        .ql-editor ul, .ql-editor ol { margin-bottom: 1rem; padding-left: 2rem; }
-        .ql-editor li { margin-bottom: 0.5rem; }
-        .ql-editor code {
-            background: #2a2a2a;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'JetBrains Mono', 'Fira Code', monospace;
-        }
-        .ql-editor pre {
-            background: #2a2a2a;
-            padding: 1rem;
-            border-radius: 8px;
-            overflow-x: auto;
-            margin: 1rem 0;
-        }
-        .ql-editor pre code {
-            background: none;
-            padding: 0;
-        }
-        .ql-editor blockquote {
-            border-left: 4px solid #667eea;
-            padding-left: 1rem;
-            margin: 1rem 0;
-            color: #a0a0a0;
-            font-style: italic;
-        }
-        .ql-editor table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 1rem 0;
-        }
-        .ql-editor table td, .ql-editor table th {
-            border: 1px solid #3a3a3a;
-            padding: 0.5rem;
-            text-align: left;
-        }
-        .ql-editor table th {
-            background: #2a2a2a;
-            font-weight: 600;
-        }
-
-        /* Enhanced dark theme for toolbar */
-        .ql-toolbar.ql-snow {
-            border: 1px solid #333;
-            background: #1a1a1a;
-            border-radius: 8px 8px 0 0;
-        }
-        .ql-toolbar.ql-snow .ql-stroke {
-            stroke: #ffffff;
-        }
-        .ql-toolbar.ql-snow .ql-fill {
-            fill: #ffffff;
-        }
-        .ql-toolbar.ql-snow .ql-picker {
-            color: #ffffff;
-        }
-        .ql-toolbar.ql-snow .ql-picker-options {
-            background: #1a1a1a;
-            border: 1px solid #333;
-        }
-        .ql-toolbar.ql-snow .ql-picker-item {
-            color: #ffffff;
-        }
-        .ql-toolbar.ql-snow .ql-picker-item.ql-selected {
-            color: #667eea;
-        }
-        .ql-container.ql-snow {
-            border: 1px solid #333;
-            background: #0a0a0a;
-            border-radius: 0 0 8px 8px;
-        }
-
-        /* Fix placeholder color */
-        .ql-editor.ql-blank::before {
-            color: #666 !important;
-        }
-
-        /* Tighter spacing for consecutive paragraphs */
-        .ql-editor p + p {
-            margin-top: 0.25rem;
-        }
-
-        /* Reduce spacing for empty paragraphs (br tags) */
-        .ql-editor p:has(br:only-child) {
-            margin-bottom: 0.25rem;
-        }
-    `;
-    document.head.appendChild(style);
-
     // Initialize editor first, then set up event listeners
     initializeEditor();
 
@@ -1822,9 +1712,42 @@ function hideEditor() {
     const editorHeader = document.querySelector('.editor-header');
     const tagManagement = document.getElementById('tagManagement');
 
-    if (editorContainer) editorContainer.style.display = 'none';
-    if (editorHeader) editorHeader.style.display = 'none';
+    // Hide tag management
     if (tagManagement) tagManagement.style.display = 'none';
+
+    // Show empty state message instead of hiding editor
+    if (editorContainer) {
+        editorContainer.innerHTML = `
+            <div class="empty-editor-state">
+                <div class="empty-editor-icon">📝</div>
+                <div class="empty-editor-title">No Note Selected</div>
+                <div class="empty-editor-message">
+                    Click on a note from the sidebar to start editing,<br>
+                    or create a new note to get started.
+                </div>
+                <button class="empty-editor-action" onclick="createNewNote()">
+                    ➕ Create New Note
+                </button>
+            </div>
+        `;
+    }
+
+    // Update header to show empty state
+    if (editorHeader) {
+        const titleElement = document.getElementById('editorTitle');
+        if (titleElement) {
+            titleElement.innerHTML = '<span class="title-text">Select a note or create a new one</span>';
+        }
+
+        // Clear metadata
+        const wordCount = document.getElementById('wordCount');
+        const charCount = document.getElementById('charCount');
+        const lastSaved = document.getElementById('lastSaved');
+
+        if (wordCount) wordCount.textContent = '0 words';
+        if (charCount) charCount.textContent = '0 characters';
+        if (lastSaved) lastSaved.textContent = '';
+    }
 }
 
 function showEditor() {
