@@ -1035,7 +1035,7 @@ MAIN_PAGE = f"""
         </div>
     </script>
 
-    <script src="/static/js/editor.js?v=2.6"></script>
+    <script src="/static/js/editor.js?v=2.9"></script>
 </body>
 </html>
 """

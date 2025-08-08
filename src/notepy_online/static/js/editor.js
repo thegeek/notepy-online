@@ -1711,26 +1711,39 @@ function hideEditor() {
     const editorContainer = document.querySelector('.editor-container');
     const editorHeader = document.querySelector('.editor-header');
     const tagManagement = document.getElementById('tagManagement');
+    const editorElement = document.getElementById('editor');
+    const toolbar = document.querySelector('.ql-toolbar');
 
     // Hide tag management
     if (tagManagement) tagManagement.style.display = 'none';
 
-    // Show empty state message instead of hiding editor
-    if (editorContainer) {
-        editorContainer.innerHTML = `
-            <div class="empty-editor-state">
-                <div class="empty-editor-icon">📝</div>
-                <div class="empty-editor-title">No Note Selected</div>
-                <div class="empty-editor-message">
-                    Click on a note from the sidebar to start editing,<br>
-                    or create a new note to get started.
-                </div>
-                <button class="empty-editor-action" onclick="createNewNote()">
-                    ➕ Create New Note
-                </button>
-            </div>
-        `;
+    // Hide the editor element and toolbar
+    if (editorElement) {
+        editorElement.style.display = 'none';
     }
+    if (toolbar) {
+        toolbar.style.display = 'none';
+    }
+
+    // Add empty state message if it doesn't exist
+    let emptyState = editorContainer.querySelector('.empty-editor-state');
+    if (!emptyState) {
+        emptyState = document.createElement('div');
+        emptyState.className = 'empty-editor-state';
+        emptyState.innerHTML = `
+            <div class="empty-editor-icon">📝</div>
+            <div class="empty-editor-title">No Note Selected</div>
+            <div class="empty-editor-message">
+                Click on a note from the sidebar to start editing,<br>
+                or create a new note to get started.
+            </div>
+            <button class="empty-editor-action" onclick="createNewNote()">
+                ➕ Create New Note
+            </button>
+        `;
+        editorContainer.appendChild(emptyState);
+    }
+    emptyState.style.display = 'flex';
 
     // Update header to show empty state
     if (editorHeader) {
@@ -1753,8 +1766,23 @@ function hideEditor() {
 function showEditor() {
     const editorContainer = document.querySelector('.editor-container');
     const editorHeader = document.querySelector('.editor-header');
+    const editorElement = document.getElementById('editor');
+    const emptyState = editorContainer.querySelector('.empty-editor-state');
+    const toolbar = document.querySelector('.ql-toolbar');
 
-    if (editorContainer) editorContainer.style.display = 'block';
+    // Hide empty state and show editor and toolbar
+    if (emptyState) {
+        emptyState.style.display = 'none';
+    }
+
+    if (editorElement) {
+        editorElement.style.display = 'block';
+    }
+
+    if (toolbar) {
+        toolbar.style.display = 'block';
+    }
+
     if (editorHeader) editorHeader.style.display = 'flex';
 }
 
