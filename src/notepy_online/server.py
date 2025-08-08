@@ -13,9 +13,11 @@ Features:
 """
 
 import asyncio
+import json
 import ssl
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 from aiohttp import web
 from aiohttp.web import Request, Response
@@ -56,11 +58,11 @@ class NotepyOnlineServer:
             The server automatically initializes the resource manager and
             note manager, and sets up all API and web interface routes.
         """
-        self.host = host
-        self.port = port
-        self.resource_mgr = ResourceManager()
-        self.note_mgr = NoteManager(self.resource_mgr)
-        self.app = web.Application()
+        self.host: str = host
+        self.port: int = port
+        self.resource_mgr: ResourceManager = ResourceManager()
+        self.note_mgr: NoteManager = NoteManager(self.resource_mgr)
+        self.app: web.Application = web.Application()
         self._setup_routes()
 
     def _setup_routes(self) -> None:
@@ -98,69 +100,66 @@ class NotepyOnlineServer:
         """Serve the main web interface.
 
         Returns:
-            HTML response with the main note management interface
+            HTTP response with the main page HTML
         """
-        html = self._get_index_html()
-        return web.Response(text=html, content_type="text/html")
+        return web.Response(text=self._get_index_html(), content_type="text/html")
 
     def _get_index_html(self) -> str:
-        """Get the main HTML interface.
+        """Get the main page HTML content.
 
         Returns:
-            HTML content for the main note management interface
+            HTML content for the main page
         """
         return MAIN_PAGE
 
     async def status(self, request: Request) -> Response:
-        """Serve the status dashboard page.
+        """Serve the status page.
 
         Returns:
-            HTML response with the system status and statistics
+            HTTP response with the status page HTML
         """
-        html = self._get_status_html()
-        return web.Response(text=html, content_type="text/html")
+        return web.Response(text=self._get_status_html(), content_type="text/html")
 
     def _get_status_html(self) -> str:
-        """Get the status HTML interface.
+        """Get the status page HTML content.
 
         Returns:
-            HTML content for the system status dashboard
+            HTML content for the status page
         """
         return STATUS_PAGE
 
     async def get_notes(self, request: Request) -> Response:
         """Get all notes with optional filtering.
 
-        Query Parameters:
-            search: Optional search query to filter notes
-
         Returns:
-            JSON response with list of notes or error message
+            JSON response with list of notes
         """
-        try:
-            search_query = request.query.get("search")
-            notes = self.note_mgr.list_notes(search_query=search_query)
-            data = {"notes": [note.to_dict() for note in notes]}
-            return web.json_response(data)
-        except Exception as e:
-            return web.json_response({"error": str(e)}, status=500)
+        tags_param: Optional[str] = request.query.get("tags")
+        search_param: Optional[str] = request.query.get("search")
+
+        tags: Optional[List[str]] = tags_param.split(",") if tags_param else None
+        notes: List[Any] = self.note_mgr.list_notes(
+            tags=tags, search_query=search_param
+        )
+
+        notes_data: List[Dict[str, Any]] = [note.to_dict() for note in notes]
+        return web.json_response({"notes": notes_data})
 
     async def create_note(self, request: Request) -> Response:
         """Create a new note.
 
-        Request Body:
-            JSON object with title, content, and tags fields
-
         Returns:
-            JSON response with created note data or error message
+            JSON response with created note data
         """
         try:
-            data = await request.json()
-            title = data.get("title", "")
-            content = data.get("content", "")
-            tags = data.get("tags", [])
+            data: Dict[str, Any] = await request.json()
+            title: str = data["title"]
+            content: str = data.get("content", "")
+            tags: Optional[List[str]] = data.get("tags")
 
-            note = self.note_mgr.create_note(title=title, content=content, tags=tags)
+            note: Any = self.note_mgr.create_note(
+                title=title, content=content, tags=tags
+            )
             return web.json_response(note.to_dict(), status=201)
         except Exception as e:
             return web.json_response({"error": str(e)}, status=500)
@@ -168,125 +167,122 @@ class NotepyOnlineServer:
     async def get_note(self, request: Request) -> Response:
         """Get a specific note by ID.
 
-        Path Parameters:
-            note_id: The unique identifier of the note
-
         Returns:
-            JSON response with note data or 404 error if not found
+            JSON response with note data or 404 if not found
         """
-        try:
-            note_id = request.match_info["note_id"]
-            note = self.note_mgr.get_note(note_id)
+        note_id: str = request.match_info["note_id"]
+        note: Optional[Any] = self.note_mgr.get_note(note_id)
 
-            if not note:
-                return web.json_response({"error": "Note not found"}, status=404)
-
+        if note:
             return web.json_response(note.to_dict())
-        except Exception as e:
-            return web.json_response({"error": str(e)}, status=500)
+        else:
+            return web.json_response({"error": "Note not found"}, status=404)
 
     async def update_note(self, request: Request) -> Response:
         """Update a note.
 
-        Path Parameters:
-            note_id: The unique identifier of the note
-
-        Request Body:
-            JSON object with optional title, content, and tags fields
-
         Returns:
-            JSON response with updated note data or error message
+            JSON response with updated note data or 404 if not found
         """
         try:
-            note_id = request.match_info["note_id"]
-            data = await request.json()
+            note_id: str = request.match_info["note_id"]
+            data: Dict[str, Any] = await request.json()
 
-            title = data.get("title")
-            content = data.get("content")
-            tags = data.get("tags")
+            title: Optional[str] = data.get("title")
+            content: Optional[str] = data.get("content")
+            tags: Optional[List[str]] = data.get("tags")
 
-            note = self.note_mgr.update_note(
+            note: Optional[Any] = self.note_mgr.update_note(
                 note_id=note_id, title=title, content=content, tags=tags
             )
 
-            if not note:
+            if note:
+                return web.json_response(note.to_dict())
+            else:
                 return web.json_response({"error": "Note not found"}, status=404)
-
-            return web.json_response(note.to_dict())
-        except Exception as e:
-            return web.json_response({"error": str(e)}, status=500)
+        except json.JSONDecodeError as e:
+            return web.json_response({"error": str(e)}, status=400)
 
     async def delete_note(self, request: Request) -> Response:
-        """Delete a note."""
-        try:
-            note_id = request.match_info["note_id"]
-            success = self.note_mgr.delete_note(note_id)
+        """Delete a note.
 
-            if not success:
-                return web.json_response({"error": "Note not found"}, status=404)
+        Returns:
+            JSON response indicating success or 404 if not found
+        """
+        note_id: str = request.match_info["note_id"]
+        deleted: bool = self.note_mgr.delete_note(note_id)
 
+        if deleted:
             return web.json_response({"message": "Note deleted successfully"})
-        except Exception as e:
-            return web.json_response({"error": str(e)}, status=500)
+        else:
+            return web.json_response({"error": "Note not found"}, status=404)
 
     async def get_tags(self, request: Request) -> Response:
-        """Get all tags."""
-        try:
-            tags = self.note_mgr.get_all_tags()
-            return web.json_response({"tags": tags})
-        except Exception as e:
-            return web.json_response({"error": str(e)}, status=500)
+        """Get all unique tags.
+
+        Returns:
+            JSON response with list of tags
+        """
+        tags: List[str] = self.note_mgr.get_all_tags()
+        return web.json_response({"tags": tags})
 
     async def add_tag(self, request: Request) -> Response:
-        """Add a tag to a note."""
+        """Add a tag to a note.
+
+        Returns:
+            JSON response indicating success or 404 if note not found
+        """
         try:
-            note_id = request.match_info["note_id"]
-            data = await request.json()
-            tag = data.get("tag", "")
+            note_id: str = request.match_info["note_id"]
+            data: Dict[str, Any] = await request.json()
+            tag: str = data["tag"]
 
-            note = self.note_mgr.get_note(note_id)
-            if not note:
+            note: Optional[Any] = self.note_mgr.get_note(note_id)
+            if note:
+                note.add_tag(tag)
+                self.note_mgr._save_notes()
+                return web.json_response(note.to_dict())
+            else:
                 return web.json_response({"error": "Note not found"}, status=404)
-
-            note.add_tag(tag)
-            self.note_mgr._save_notes()
-
-            return web.json_response(note.to_dict())
         except Exception as e:
             return web.json_response({"error": str(e)}, status=500)
 
     async def remove_tag(self, request: Request) -> Response:
-        """Remove a tag from a note."""
-        try:
-            note_id = request.match_info["note_id"]
-            tag = request.match_info["tag"]
+        """Remove a tag from a note.
 
-            note = self.note_mgr.get_note(note_id)
-            if not note:
-                return web.json_response({"error": "Note not found"}, status=404)
+        Returns:
+            JSON response indicating success or 404 if note not found
+        """
+        note_id: str = request.match_info["note_id"]
+        tag: str = request.match_info["tag"]
 
+        note: Optional[Any] = self.note_mgr.get_note(note_id)
+        if note:
             note.remove_tag(tag)
             self.note_mgr._save_notes()
-
             return web.json_response(note.to_dict())
-        except Exception as e:
-            return web.json_response({"error": str(e)}, status=500)
+        else:
+            return web.json_response({"error": "Note not found"}, status=404)
 
     async def export_notes(self, request: Request) -> Response:
-        """Export all notes as JSON or Markdown."""
+        """Export all notes to JSON.
+
+        Returns:
+            JSON response with exported notes data
+        """
         try:
-            format_type = request.query.get("format", "json")
-            notes = self.note_mgr.list_notes()
+            format_type: str = request.query.get("format", "json")
+            notes: List[Any] = self.note_mgr.list_notes()
 
             if format_type == "json":
-                data = {
+                data: Dict[str, Any] = {
                     "export_date": str(datetime.now()),
                     "version": "1.0",
                     "notes": [note.to_dict() for note in notes],
                 }
                 return web.json_response(data)
             elif format_type == "markdown":
-                markdown_content = "# Notepy Online Export\n\n"
+                markdown_content: str = "# Notepy Online Export\n\n"
                 for note in notes:
                     markdown_content += f"## {note.title}\n\n"
                     markdown_content += f"**Created:** {note.created_at}\n"
@@ -317,11 +313,15 @@ class NotepyOnlineServer:
             return web.json_response({"error": str(e)}, status=500)
 
     async def export_single_note(self, request: Request) -> Response:
-        """Export a single note."""
+        """Export a single note to JSON.
+
+        Returns:
+            JSON response with exported note data or 404 if not found
+        """
         try:
-            note_id = request.match_info["note_id"]
-            format_type = request.query.get("format", "json")
-            note = self.note_mgr.get_note(note_id)
+            note_id: str = request.match_info["note_id"]
+            format_type: str = request.query.get("format", "json")
+            note: Optional[Any] = self.note_mgr.get_note(note_id)
 
             if not note:
                 return web.json_response({"error": "Note not found"}, status=404)
@@ -329,7 +329,7 @@ class NotepyOnlineServer:
             if format_type == "json":
                 return web.json_response(note.to_dict())
             elif format_type == "markdown":
-                markdown_content = f"# {note.title}\n\n"
+                markdown_content: str = f"# {note.title}\n\n"
                 markdown_content += f"**Created:** {note.created_at}\n"
                 markdown_content += f"**Updated:** {note.updated_at}\n"
                 if note.tags:
@@ -356,21 +356,25 @@ class NotepyOnlineServer:
             return web.json_response({"error": str(e)}, status=500)
 
     async def import_notes(self, request: Request) -> Response:
-        """Import notes from JSON."""
+        """Import notes from JSON.
+
+        Returns:
+            JSON response indicating import success
+        """
         try:
-            data = await request.json()
+            data: Dict[str, Any] = await request.json()
 
             if not isinstance(data, dict) or "notes" not in data:
                 return web.json_response({"error": "Invalid import format"}, status=400)
 
-            imported_count = 0
-            errors = []
+            imported_count: int = 0
+            errors: List[str] = []
 
             for note_data in data["notes"]:
                 try:
-                    title = note_data.get("title", "Imported Note")
-                    content = note_data.get("content", "")
-                    tags = note_data.get("tags", [])
+                    title: str = note_data.get("title", "Imported Note")
+                    content: str = note_data.get("content", "")
+                    tags: List[str] = note_data.get("tags", [])
 
                     # Create the note
                     self.note_mgr.create_note(title=title, content=content, tags=tags)
@@ -392,67 +396,77 @@ class NotepyOnlineServer:
             return web.json_response({"error": str(e)}, status=500)
 
     async def serve_static(self, request: Request) -> Response:
-        """Serve static files from the package."""
+        """Serve static files.
+
+        Returns:
+            HTTP response with static file content
+        """
         try:
-            path = request.match_info["path"]
-
-            # Determine if we need to serve as text or binary
-            if path.endswith((".css", ".js", ".html", ".txt", ".json")):
-                content = read_static_file(path)
-                content_type = get_static_file_mime_type(path)
-                return web.Response(text=content, content_type=content_type)
-            else:
-                content = read_static_file_bytes(path)
-                content_type = get_static_file_mime_type(path)
-                return web.Response(body=content, content_type=content_type)
-
+            path: str = request.match_info["path"]
+            content: bytes = read_static_file_bytes(path)
+            mime_type: str = get_static_file_mime_type(path)
+            return web.Response(body=content, content_type=mime_type)
         except FileNotFoundError:
             return web.Response(text="Static file not found", status=404)
-        except Exception as e:
-            return web.Response(text=f"Error serving static file: {str(e)}", status=500)
 
     async def start(
-        self, cert_file: Path | None = None, key_file: Path | None = None
+        self, cert_file: Optional[Path] = None, key_file: Optional[Path] = None
     ) -> None:
-        """Start the web server."""
-        ssl_context = None
-        if cert_file and key_file and cert_file.exists() and key_file.exists():
-            ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        """Start the web server.
+
+        Args:
+            cert_file: Path to SSL certificate file (optional)
+            key_file: Path to SSL private key file (optional)
+
+        Note:
+            If SSL files are provided, the server will start with HTTPS.
+            Otherwise, it will start with HTTP.
+        """
+        if cert_file and key_file:
+            ssl_context: ssl.SSLContext = ssl.create_default_context(
+                ssl.Purpose.CLIENT_AUTH
+            )
             ssl_context.load_cert_chain(cert_file, key_file)
-
-        runner = web.AppRunner(self.app)
-        await runner.setup()
-
-        site = web.TCPSite(runner, self.host, self.port, ssl_context=ssl_context)
-        await site.start()
-
-        protocol = "https" if ssl_context else "http"
-        print(
-            f"✅ Notepy Online server running at {protocol}://{self.host}:{self.port}"
-        )
-        print("🛑 Press Ctrl+C to stop the server")
+            runner: web.AppRunner = web.AppRunner(self.app)
+            await runner.setup()
+            site: web.TCPSite = web.TCPSite(
+                runner, self.host, self.port, ssl_context=ssl_context
+            )
+            await site.start()
+            print(f"🚀 Server started at https://{self.host}:{self.port}")
+        else:
+            runner_no_ssl: web.AppRunner = web.AppRunner(self.app)
+            await runner_no_ssl.setup()
+            site_no_ssl: web.TCPSite = web.TCPSite(runner_no_ssl, self.host, self.port)
+            await site_no_ssl.start()
+            print(f"🚀 Server started at http://{self.host}:{self.port}")
 
         try:
             await asyncio.Future()  # Run forever
         except KeyboardInterrupt:
-            print("\n🛑 Shutting down server...")
-        finally:
-            await runner.cleanup()
+            if cert_file and key_file:
+                await runner.cleanup()
+            else:
+                await runner_no_ssl.cleanup()
 
 
 async def run_server(
     host: str = "localhost",
     port: int = 8443,
-    cert_file: Path | None = None,
-    key_file: Path | None = None,
+    cert_file: Optional[Path] = None,
+    key_file: Optional[Path] = None,
 ) -> None:
     """Run the Notepy Online web server.
 
     Args:
-        host: Server host address
-        port: Server port number
-        cert_file: Path to SSL certificate file
-        key_file: Path to SSL private key file
+        host: Server host address (default: "localhost")
+        port: Server port number (default: 8443)
+        cert_file: Path to SSL certificate file (optional)
+        key_file: Path to SSL private key file (optional)
+
+    Note:
+        This function creates and starts a NotepyOnlineServer instance.
+        It will run until interrupted by Ctrl+C.
     """
-    server = NotepyOnlineServer(host=host, port=port)
+    server: NotepyOnlineServer = NotepyOnlineServer(host=host, port=port)
     await server.start(cert_file=cert_file, key_file=key_file)

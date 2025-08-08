@@ -13,6 +13,7 @@ Features:
 
 import importlib.resources
 from pathlib import Path
+from typing import Dict, List, Optional
 
 
 def get_static_file_path(relative_path: str) -> Path:
@@ -103,9 +104,9 @@ def get_static_file_mime_type(file_path: str) -> str:
         This function supports common web file types including CSS, JavaScript,
         HTML, images, and fonts. Unknown extensions return 'application/octet-stream'.
     """
-    extension = Path(file_path).suffix.lower()
+    extension: str = Path(file_path).suffix.lower()
 
-    mime_types = {
+    mime_types: Dict[str, str] = {
         ".css": "text/css",
         ".js": "application/javascript",
         ".html": "text/html",
@@ -129,7 +130,7 @@ def get_static_file_mime_type(file_path: str) -> str:
     return mime_types.get(extension, "application/octet-stream")
 
 
-def list_static_files() -> list[str]:
+def list_static_files() -> List[str]:
     """List all available static files in the package.
 
     Returns:
@@ -137,13 +138,13 @@ def list_static_files() -> list[str]:
     """
     try:
         with importlib.resources.path("notepy_online.static", ".") as static_dir:
-            static_path = Path(static_dir)
-            files = []
+            static_path: Path = Path(static_dir)
+            files: List[str] = []
 
             for file_path in static_path.rglob("*"):
                 if file_path.is_file():
                     # Get relative path from static directory
-                    relative_path = file_path.relative_to(static_path)
+                    relative_path: Path = file_path.relative_to(static_path)
                     files.append(str(relative_path))
 
             return files

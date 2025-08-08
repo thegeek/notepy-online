@@ -13,12 +13,13 @@ Features:
 """
 
 import json
+import re
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Optional, Union
 
-import html2text  # type: ignore
+import html2text
 
 from .resource import ResourceManager
 
@@ -36,7 +37,7 @@ def html_to_markdown(html_content: str) -> str:
         return ""
 
     # Configure html2text for better Markdown output
-    h = html2text.HTML2Text()
+    h: html2text.HTML2Text = html2text.HTML2Text()
     h.ignore_links = False
     h.ignore_images = False
     h.ignore_emphasis = False
@@ -48,11 +49,9 @@ def html_to_markdown(html_content: str) -> str:
     h.ul_item_mark = "-"  # Use dash for unordered lists
 
     # Convert HTML to Markdown
-    markdown = h.handle(html_content)
+    markdown: str = h.handle(html_content)
 
     # Post-process to fix line spacing issues
-    import re
-
     # Replace multiple consecutive empty lines with single empty lines
     markdown = re.sub(r"\n{3,}", "\n\n", markdown)
 
@@ -71,10 +70,10 @@ class Note:
         self,
         title: str,
         content: str = "",
-        tags: list[str] | None = None,
-        note_id: str | None = None,
-        created_at: datetime | None = None,
-        updated_at: datetime | None = None,
+        tags: Optional[List[str]] = None,
+        note_id: Optional[str] = None,
+        created_at: Optional[datetime] = None,
+        updated_at: Optional[datetime] = None,
     ) -> None:
         """Initialize a new note.
 
@@ -86,14 +85,14 @@ class Note:
             created_at: Creation timestamp
             updated_at: Last update timestamp
         """
-        self.title = title
-        self.content = content
-        self.tags = tags or []
-        self.note_id = note_id or str(uuid.uuid4())
-        self.created_at = created_at or datetime.now(timezone.utc)
-        self.updated_at = updated_at or datetime.now(timezone.utc)
+        self.title: str = title
+        self.content: str = content
+        self.tags: List[str] = tags or []
+        self.note_id: str = note_id or str(uuid.uuid4())
+        self.created_at: datetime = created_at or datetime.now(timezone.utc)
+        self.updated_at: datetime = updated_at or datetime.now(timezone.utc)
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert note to dictionary for serialization.
 
         Returns:
@@ -109,46 +108,46 @@ class Note:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any], content: str = "") -> "Note":
+    def from_dict(cls, data: Dict[str, Any], content: str = "") -> "Note":
         """Create note from dictionary.
 
         Args:
             data: Dictionary containing note data
-            content: Note content (loaded separately, falls back to data["content"] if not provided)
+            content: Note content (loaded separately from file)
 
         Returns:
             Note instance
         """
-        # Use content from data if not provided separately
-        note_content = content if content else data.get("content", "")
+        # Parse timestamps
+        created_at = datetime.fromisoformat(data["created_at"])
+        updated_at = datetime.fromisoformat(data["updated_at"])
 
         return cls(
             title=data["title"],
-            content=note_content,
-            tags=data.get("tags", []),
+            content=content,
+            tags=data["tags"],
             note_id=data["note_id"],
-            created_at=datetime.fromisoformat(data["created_at"]),
-            updated_at=datetime.fromisoformat(data["updated_at"]),
+            created_at=created_at,
+            updated_at=updated_at,
         )
 
     def update(
         self,
-        title: str | None = None,
-        content: str | None = None,
-        tags: list[str] | None = None,
+        title: Optional[str] = None,
+        content: Optional[str] = None,
+        tags: Optional[List[str]] = None,
     ) -> None:
-        """Update note content.
+        """Update note fields.
 
         Args:
             title: New title (optional)
-            content: New content (optional) - can be HTML from editor
+            content: New content (optional)
             tags: New tags (optional)
         """
         if title is not None:
             self.title = title
         if content is not None:
-            # Convert HTML content to Markdown for storage
-            self.content = html_to_markdown(content)
+            self.content = content
         if tags is not None:
             self.tags = tags
         self.updated_at = datetime.now(timezone.utc)
@@ -157,11 +156,7 @@ class Note:
         """Add a tag to the note.
 
         Args:
-            tag: Tag to add to the note
-
-        Note:
-            This method automatically updates the note's updated_at timestamp
-            when a tag is successfully added.
+            tag: Tag to add
         """
         if tag not in self.tags:
             self.tags.append(tag)
@@ -171,28 +166,24 @@ class Note:
         """Remove a tag from the note.
 
         Args:
-            tag: Tag to remove from the note
-
-        Note:
-            This method automatically updates the note's updated_at timestamp
-            when a tag is successfully removed.
+            tag: Tag to remove
         """
         if tag in self.tags:
             self.tags.remove(tag)
             self.updated_at = datetime.now(timezone.utc)
 
     def search_in_content(self, query: str) -> bool:
-        """Search for text in note content, title, and tags.
-
-        This method performs a case-insensitive search across the note's
-        title, content, and tags to determine if the query matches.
+        """Search for text in note content.
 
         Args:
-            query: Search query to look for
+            query: Search query
 
         Returns:
-            True if query is found in title, content, or any tag
+            True if query is found in content
         """
+        if not query:
+            return True
+
         query_lower = query.lower()
         return (
             query_lower in self.title.lower()
@@ -202,61 +193,41 @@ class Note:
 
 
 class NoteManager:
-    """Manages note operations and storage.
-
-    This class provides comprehensive note management functionality including
-    creation, retrieval, updating, deletion, and search operations. It handles
-    both metadata storage (JSON) and content storage (Markdown files) for
-    optimal performance and flexibility.
-
-    The NoteManager maintains an in-memory cache of notes for fast access
-    while persisting changes to disk for durability.
-    """
+    """Manages note operations and persistence."""
 
     def __init__(self, resource_manager: ResourceManager) -> None:
-        """Initialize the note manager.
+        """Initialize note manager.
 
         Args:
             resource_manager: Resource manager instance
         """
-        self.resource_manager = resource_manager
-        self.notes: dict[str, Note] = {}
-        self.notes_file = resource_manager.notes_dir / "notes.json"
+        self.resource_manager: ResourceManager = resource_manager
+        self.notes: Dict[str, Note] = {}
         self._load_notes()
 
     def _load_notes(self) -> None:
-        """Load notes from storage.
-
-        This method loads all notes from the JSON metadata file and their
-        corresponding Markdown content files. It handles errors gracefully
-        and initializes an empty notes dictionary if loading fails.
-        """
-        if self.notes_file.exists():
+        """Load notes from storage."""
+        notes_file: Path = self.resource_manager.notes_dir / "notes.json"
+        if notes_file.exists():
             try:
-                with open(self.notes_file, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    self.notes = {}
-                    for note_id, note_data in data.items():
-                        content = self._load_note_content(note_id)
+                with open(notes_file, "r", encoding="utf-8") as f:
+                    notes_data: Dict[str, Any] = json.load(f)
+                    for note_id, note_data in notes_data.items():
+                        content: str = self._load_note_content(note_id)
                         self.notes[note_id] = Note.from_dict(note_data, content)
             except Exception as e:
                 print(f"Warning: Failed to load notes: {e}")
-                self.notes = {}
 
     def _load_note_content(self, note_id: str) -> str:
-        """Load note content from markdown file.
+        """Load note content from file.
 
         Args:
             note_id: Note identifier
 
         Returns:
-            Note content as string, empty string if file doesn't exist or read fails
-
-        Note:
-            This method handles file reading errors gracefully and returns
-            an empty string if the content file cannot be read.
+            Note content
         """
-        content_file = self.resource_manager.notes_dir / f"{note_id}.md"
+        content_file: Path = self.resource_manager.notes_dir / f"{note_id}.md"
         if content_file.exists():
             try:
                 with open(content_file, "r", encoding="utf-8") as f:
@@ -266,36 +237,28 @@ class NoteManager:
         return ""
 
     def _save_note_content(self, note_id: str, content: str) -> None:
-        """Save note content to markdown file.
+        """Save note content to file.
 
         Args:
             note_id: Note identifier
-            content: Note content to save
-
-        Raises:
-            RuntimeError: If content cannot be saved to file
+            content: Note content
         """
-        content_file = self.resource_manager.notes_dir / f"{note_id}.md"
+        content_file: Path = self.resource_manager.notes_dir / f"{note_id}.md"
         try:
             with open(content_file, "w", encoding="utf-8") as f:
                 f.write(content)
         except Exception as e:
-            raise RuntimeError(f"Failed to save note content: {e}")
+            print(f"Warning: Failed to save content for note {note_id}: {e}")
 
     def _save_notes(self) -> None:
-        """Save notes to storage.
-
-        This method saves both the notes metadata (JSON) and individual
-        note content files (Markdown). It ensures data consistency by
-        saving all notes atomically.
-
-        Raises:
-            RuntimeError: If notes cannot be saved to storage
-        """
+        """Save notes metadata to storage."""
         try:
-            data = {note_id: note.to_dict() for note_id, note in self.notes.items()}
-            with open(self.notes_file, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
+            notes_file: Path = self.resource_manager.notes_dir / "notes.json"
+            notes_data: Dict[str, Dict[str, Any]] = {
+                note_id: note.to_dict() for note_id, note in self.notes.items()
+            }
+            with open(notes_file, "w", encoding="utf-8") as f:
+                json.dump(notes_data, f, indent=2, ensure_ascii=False)
 
             # Save content files
             for note_id, note in self.notes.items():
@@ -304,7 +267,7 @@ class NoteManager:
             raise RuntimeError(f"Failed to save notes: {e}")
 
     def create_note(
-        self, title: str, content: str = "", tags: list[str] | None = None
+        self, title: str, content: str = "", tags: Optional[List[str]] = None
     ) -> Note:
         """Create a new note.
 
@@ -321,13 +284,13 @@ class NoteManager:
             for storage. The note is immediately saved to disk after creation.
         """
         # Convert HTML content to Markdown for storage
-        markdown_content = html_to_markdown(content)
-        note = Note(title=title, content=markdown_content, tags=tags)
+        markdown_content: str = html_to_markdown(content)
+        note: Note = Note(title=title, content=markdown_content, tags=tags)
         self.notes[note.note_id] = note
         self._save_notes()
         return note
 
-    def get_note(self, note_id: str) -> Note | None:
+    def get_note(self, note_id: str) -> Optional[Note]:
         """Get a note by ID.
 
         Args:
@@ -345,10 +308,10 @@ class NoteManager:
     def update_note(
         self,
         note_id: str,
-        title: str | None = None,
-        content: str | None = None,
-        tags: list[str] | None = None,
-    ) -> Note | None:
+        title: Optional[str] = None,
+        content: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+    ) -> Optional[Note]:
         """Update an existing note.
 
         Args:
@@ -364,7 +327,7 @@ class NoteManager:
             HTML content from the editor is automatically converted to Markdown
             for storage. Changes are immediately persisted to disk.
         """
-        note = self.notes.get(note_id)
+        note: Optional[Note] = self.notes.get(note_id)
         if note:
             note.update(title=title, content=content, tags=tags)
             self._save_notes()
@@ -388,7 +351,7 @@ class NoteManager:
             self._save_notes()
 
             # Delete content file
-            content_file = self.resource_manager.notes_dir / f"{note_id}.md"
+            content_file: Path = self.resource_manager.notes_dir / f"{note_id}.md"
             if content_file.exists():
                 try:
                     content_file.unlink()
@@ -401,108 +364,99 @@ class NoteManager:
         return False
 
     def list_notes(
-        self, tags: list[str] | None = None, search_query: str | None = None
-    ) -> list[Note]:
+        self, tags: Optional[List[str]] = None, search_query: Optional[str] = None
+    ) -> List[Note]:
         """List notes with optional filtering.
 
         Args:
-            tags: Filter by tags (optional) - notes must have at least one matching tag
-            search_query: Search in title, content, and tags (optional) - case-insensitive
+            tags: Filter by tags (all tags must be present)
+            search_query: Search in title, content, and tags
 
         Returns:
-            List of matching notes, sorted by updated_at (newest first)
-
-        Note:
-            When both tags and search_query are provided, notes must match both criteria.
-            Search is performed case-insensitively across title, content, and tags.
+            List of matching notes
         """
-        notes = list(self.notes.values())
+        filtered_notes: List[Note] = list(self.notes.values())
 
         # Filter by tags
         if tags:
-            notes = [note for note in notes if any(tag in note.tags for tag in tags)]
+            filtered_notes = [
+                note for note in filtered_notes if any(tag in note.tags for tag in tags)
+            ]
 
         # Filter by search query
         if search_query:
-            notes = [note for note in notes if note.search_in_content(search_query)]
+            filtered_notes = [
+                note for note in filtered_notes if note.search_in_content(search_query)
+            ]
 
         # Sort by updated_at (newest first)
-        notes.sort(key=lambda x: x.updated_at, reverse=True)
-        return notes
+        filtered_notes.sort(key=lambda note: note.updated_at, reverse=True)
 
-    def get_all_tags(self) -> list[str]:
-        """Get all unique tags used in notes.
+        return filtered_notes
+
+    def get_all_tags(self) -> List[str]:
+        """Get all unique tags from all notes.
 
         Returns:
-            List of unique tags, sorted alphabetically
-
-        Note:
-            This method collects all tags from all notes and returns
-            a deduplicated, alphabetically sorted list.
+            List of unique tags
         """
-        tags = set()
+        all_tags: set[str] = set()
         for note in self.notes.values():
-            tags.update(note.tags)
-        return sorted(list(tags))
+            all_tags.update(note.tags)
+        return sorted(list(all_tags))
 
     def get_note_count(self) -> int:
         """Get total number of notes.
 
         Returns:
-            Number of notes currently in the system
-
-        Note:
-            This method returns the count of notes loaded in memory,
-            which should match the number of notes on disk.
+            Number of notes
         """
         return len(self.notes)
 
     def export_notes(self, file_path: Path) -> None:
-        """Export all notes to a JSON file.
+        """Export all notes to JSON file.
 
         Args:
-            file_path: Path to export file
+            file_path: Output file path
 
         Note:
-            The exported JSON includes both note metadata and content,
-            making it suitable for backup and migration purposes.
+            This exports the complete note data including content,
+            not just the metadata like the internal storage format.
         """
-        data = {}
-        for note_id, note in self.notes.items():
-            note_data = note.to_dict()
-            note_data["content"] = note.content  # Include content in export
-            data[note_id] = note_data
+        export_data: Dict[str, Any] = {
+            "version": "1.0",
+            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "notes": [note.to_dict() for note in self.notes.values()],
+        }
 
         with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+            json.dump(export_data, f, indent=2, ensure_ascii=False)
 
     def import_notes(self, file_path: Path) -> int:
-        """Import notes from a JSON file.
+        """Import notes from JSON file.
 
         Args:
-            file_path: Path to import file
+            file_path: Input file path
 
         Returns:
             Number of notes imported
 
         Note:
-            This method imports notes from a previously exported JSON file.
-            Imported notes are added to the existing collection and immediately
-            saved to disk. Duplicate note IDs will be overwritten.
+            This imports notes from the export format, which includes
+            complete note data. Duplicate notes (by ID) will be skipped.
         """
         with open(file_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
+            import_data: Dict[str, Any] = json.load(f)
 
-        imported_count = 0
-        for note_id, note_data in data.items():
-            try:
-                # Extract content from import data (if present)
-                content = note_data.get("content", "")
-                note = Note.from_dict(note_data, content)
-                self.notes[note.note_id] = note  # Use new ID to avoid conflicts
+        imported_count: int = 0
+        notes_data: List[Dict[str, Any]] = import_data.get("notes", [])
+
+        for note_data in notes_data:
+            note_id: str = note_data["note_id"]
+            if note_id not in self.notes:
+                note: Note = Note.from_dict(note_data)
+                self.notes[note_id] = note
                 imported_count += 1
-            except Exception as e:
-                print(f"Warning: Failed to import note {note_id}: {e}")
 
         if imported_count > 0:
             self._save_notes()

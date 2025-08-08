@@ -31,6 +31,7 @@ import json
 import platform
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 from .server import run_server
 from .resource import ResourceManager
@@ -284,12 +285,10 @@ def create(title: str, content: str, tags: tuple[str, ...]) -> None:
 @notes.command()
 @click.option("--tags", "-g", multiple=True, help="Filter by tags")
 @click.option("--search", "-s", help="Search in title and content")
-@click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Output JSON file path"
-)
+@click.option("--output", "-o", type=click.Path(), help="Output JSON file path")
 @click.option("--pretty", "-p", is_flag=True, help="Pretty print JSON output")
 def list_notes(
-    tags: tuple[str, ...], search: str, output: Path | None, pretty: bool
+    tags: tuple[str, ...], search: str, output: Optional[str], pretty: bool
 ) -> None:
     """List all notes with optional filtering.
 
@@ -312,11 +311,12 @@ def list_notes(
 
         if output:
             data = [note.to_dict() for note in notes]
+            output_path = Path(output)
             # Ensure output directory exists
-            output.parent.mkdir(parents=True, exist_ok=True)
-            with open(output, "w", encoding="utf-8") as f:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2 if pretty else None, ensure_ascii=False)
-            click.echo(f"✅ Notes exported to: {output}")
+            click.echo(f"✅ Notes exported to: {output_path}")
         else:
             if not notes:
                 click.echo("No notes found.")
@@ -345,11 +345,9 @@ def list_notes(
 
 @notes.command()
 @click.argument("note_id", type=str)
-@click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Output JSON file path"
-)
+@click.option("--output", "-o", type=click.Path(), help="Output JSON file path")
 @click.option("--pretty", "-p", is_flag=True, help="Pretty print JSON output")
-def show(note_id: str, output: Path | None, pretty: bool) -> None:
+def show(note_id: str, output: Optional[str], pretty: bool) -> None:
     """Show detailed information about a specific note.
 
     Args:
@@ -370,13 +368,14 @@ def show(note_id: str, output: Path | None, pretty: bool) -> None:
             raise click.Abort()
 
         if output:
+            output_path = Path(output)
             # Ensure output directory exists
-            output.parent.mkdir(parents=True, exist_ok=True)
-            with open(output, "w", encoding="utf-8") as f:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(
                     note.to_dict(), f, indent=2 if pretty else None, ensure_ascii=False
                 )
-            click.echo(f"✅ Note exported to: {output}")
+            click.echo(f"✅ Note exported to: {output_path}")
         else:
             click.echo("📝 Note Details:")
             click.echo(f"  ID: {note.note_id}")
@@ -477,11 +476,9 @@ def delete(note_id: str, force: bool) -> None:
 
 @notes.command()
 @click.argument("query", type=str)
-@click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Output JSON file path"
-)
+@click.option("--output", "-o", type=click.Path(), help="Output JSON file path")
 @click.option("--pretty", "-p", is_flag=True, help="Pretty print JSON output")
-def search(query: str, output: Path | None, pretty: bool) -> None:
+def search(query: str, output: Optional[str], pretty: bool) -> None:
     """Search notes by content, title, or tags.
 
     Args:
@@ -500,11 +497,12 @@ def search(query: str, output: Path | None, pretty: bool) -> None:
 
         if output:
             data = [note.to_dict() for note in notes]
+            output_path = Path(output)
             # Ensure output directory exists
-            output.parent.mkdir(parents=True, exist_ok=True)
-            with open(output, "w", encoding="utf-8") as f:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2 if pretty else None, ensure_ascii=False)
-            click.echo(f"✅ Search results exported to: {output}")
+            click.echo(f"✅ Search results exported to: {output_path}")
         else:
             if not notes:
                 click.echo(f"No notes found matching '{query}'.")
@@ -525,8 +523,8 @@ def search(query: str, output: Path | None, pretty: bool) -> None:
 
 
 @notes.command()
-@click.argument("file_path", type=click.Path(path_type=Path))
-def export(file_path: Path) -> None:
+@click.argument("file_path", type=click.Path())
+def export(file_path: str) -> None:
     """Export all notes to a JSON file.
 
     Args:
@@ -539,8 +537,9 @@ def export(file_path: Path) -> None:
         resource_mgr = ResourceManager()
         note_mgr = NoteManager(resource_mgr)
 
-        note_mgr.export_notes(file_path)
-        click.echo(f"✅ Notes exported to: {file_path}")
+        file_path_obj = Path(file_path)
+        note_mgr.export_notes(file_path_obj)
+        click.echo(f"✅ Notes exported to: {file_path_obj}")
 
     except Exception as e:
         click.echo(f"❌ Failed to export notes: {e}", err=True)
@@ -548,8 +547,8 @@ def export(file_path: Path) -> None:
 
 
 @notes.command()
-@click.argument("file_path", type=click.Path(exists=True, path_type=Path))
-def import_notes(file_path: Path) -> None:
+@click.argument("file_path", type=click.Path(exists=True))
+def import_notes(file_path: str) -> None:
     """Import notes from a JSON file.
 
     Args:
@@ -562,8 +561,9 @@ def import_notes(file_path: Path) -> None:
         resource_mgr = ResourceManager()
         note_mgr = NoteManager(resource_mgr)
 
-        imported_count = note_mgr.import_notes(file_path)
-        click.echo(f"✅ Imported {imported_count} note(s) from: {file_path}")
+        file_path_obj = Path(file_path)
+        imported_count = note_mgr.import_notes(file_path_obj)
+        click.echo(f"✅ Imported {imported_count} note(s) from: {file_path_obj}")
 
     except Exception as e:
         click.echo(f"❌ Failed to import notes: {e}", err=True)
@@ -675,15 +675,15 @@ def remove(note_id: str, tag: str) -> None:
 @click.option("--port", "-p", default=8443, type=int, help="Server port number")
 @click.option(
     "--cert",
-    type=click.Path(exists=True, path_type=Path),
+    type=click.Path(exists=True),
     help="Path to SSL certificate file for HTTPS",
 )
 @click.option(
     "--key",
-    type=click.Path(exists=True, path_type=Path),
+    type=click.Path(exists=True),
     help="Path to SSL private key file for HTTPS",
 )
-def serve(host: str, port: int, cert: Path | None, key: Path | None) -> None:
+def serve(host: str, port: int, cert: Optional[str], key: Optional[str]) -> None:
     """Start the Notepy Online web server.
 
     This command starts the web server with the specified configuration,
@@ -704,11 +704,17 @@ def serve(host: str, port: int, cert: Path | None, key: Path | None) -> None:
         # Use default SSL files if not specified
         if not cert or not key:
             resource_mgr = ResourceManager()
-            cert = cert or resource_mgr.ssl_cert_file
-            key = key or resource_mgr.ssl_key_file
+            cert = cert or str(resource_mgr.ssl_cert_file)
+            key = key or str(resource_mgr.ssl_key_file)
+
+        # Convert string paths to Path objects
+        cert_file = Path(cert) if cert else None
+        key_file = Path(key) if key else None
 
         # Start the server
-        asyncio.run(run_server(host=host, port=port, cert_file=cert, key_file=key))
+        asyncio.run(
+            run_server(host=host, port=port, cert_file=cert_file, key_file=key_file)
+        )
 
     except KeyboardInterrupt:
         click.echo("\n🛑 Server stopped by user")
