@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .ql-editor {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             font-size: 16px;
-            line-height: 1.6;
+            line-height: 1.3;
             color: #ffffff;
             background: #0a0a0a;
             min-height: 400px;
@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .ql-editor h1 { font-size: 2rem; }
         .ql-editor h2 { font-size: 1.75rem; }
         .ql-editor h3 { font-size: 1.5rem; }
-        .ql-editor p { margin-bottom: 1rem; }
+        .ql-editor p { margin-bottom: 0.5rem; }
         .ql-editor ul, .ql-editor ol { margin-bottom: 1rem; padding-left: 2rem; }
         .ql-editor li { margin-bottom: 0.5rem; }
         .ql-editor code {
@@ -240,6 +240,16 @@ document.addEventListener('DOMContentLoaded', function () {
         /* Fix placeholder color */
         .ql-editor.ql-blank::before {
             color: #666 !important;
+        }
+
+        /* Tighter spacing for consecutive paragraphs */
+        .ql-editor p + p {
+            margin-top: 0.25rem;
+        }
+
+        /* Reduce spacing for empty paragraphs (br tags) */
+        .ql-editor p:has(br:only-child) {
+            margin-bottom: 0.25rem;
         }
     `;
     document.head.appendChild(style);
