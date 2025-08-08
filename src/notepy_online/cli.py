@@ -162,7 +162,7 @@ def check() -> None:
 
 
 @bootstrap.command()
-def open() -> None:
+def open_folder() -> None:
     """Open the resource folder in the default file explorer."""
     try:
         click.echo("📁 Opening resource folder...")
