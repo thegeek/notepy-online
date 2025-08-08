@@ -2,6 +2,10 @@
 
 A professional online note-taking and management platform with web interface and CLI for creating, organizing, and sharing notes.
 
+**Version**: 0.1.0
+**License**: MIT
+**Python**: 3.12+
+
 ## ✨ Features
 
 - **🌐 Modern Web Interface**: Beautiful dark theme with responsive design

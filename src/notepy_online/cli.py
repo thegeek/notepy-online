@@ -40,13 +40,26 @@ from .core import NoteManager
 @click.group()
 @click.version_option()
 def cli() -> None:
-    """Notepy Online - A tool for managing notes with web interface and CLI."""
+    """Notepy Online - A professional note-taking and management platform.
+
+    This command-line interface provides comprehensive note management capabilities
+    including creation, editing, searching, and organization of notes. It also
+    supports web server management and application bootstrap operations.
+
+    The CLI is designed to be both user-friendly for interactive use and
+    automation-friendly for scripting and batch operations.
+    """
     pass
 
 
 @cli.group()
 def bootstrap() -> None:
-    """Bootstrap commands for initial setup and verification."""
+    """Bootstrap commands for initial setup and verification.
+
+    These commands handle the initial setup of the Notepy Online application,
+    including resource directory creation, configuration file generation,
+    and SSL certificate creation for secure web server operation.
+    """
     pass
 
 
@@ -79,6 +92,17 @@ def init(
 
     This command creates the necessary directories, configuration file,
     and generates a self-signed SSL certificate for the server.
+
+    Args:
+        days: Number of days the SSL certificate is valid (default: 365)
+        country: Country code for certificate (default: "US")
+        state: State/province for certificate (default: "CA")
+        locality: City/locality for certificate (default: "San Francisco")
+        organization: Organization name for certificate (default: "Notepy Online")
+        common_name: Common name for certificate (default: "localhost")
+
+    Raises:
+        click.Abort: If initialization fails
     """
     try:
         click.echo("🚀 Initializing Notepy Online resources...")
@@ -115,7 +139,12 @@ def init(
 
 @bootstrap.command()
 def check() -> None:
-    """Check the status of Notepy Online resources and configuration."""
+    """Check the status of Notepy Online resources and configuration.
+
+    This command verifies the integrity and status of all application resources
+    including directories, configuration files, and SSL certificates. It provides
+    a comprehensive status report for troubleshooting and verification purposes.
+    """
     try:
         click.echo("🔍 Checking Notepy Online resources...")
 
@@ -163,7 +192,15 @@ def check() -> None:
 
 @bootstrap.command()
 def open_folder() -> None:
-    """Open the resource folder in the default file explorer."""
+    """Open the resource folder in the default file explorer.
+
+    This command opens the application's resource directory in the system's
+    default file explorer, allowing users to manually inspect and manage
+    configuration files, SSL certificates, and other application resources.
+
+    Raises:
+        click.Abort: If the resource directory doesn't exist or opening fails
+    """
     try:
         click.echo("📁 Opening resource folder...")
 
@@ -205,7 +242,12 @@ def open_folder() -> None:
 
 @cli.group()
 def notes() -> None:
-    """Note management commands."""
+    """Note management commands.
+
+    These commands provide comprehensive note management capabilities including
+    creation, editing, searching, listing, and organization of notes. All
+    operations support both interactive and automated workflows.
+    """
     pass
 
 
@@ -214,7 +256,16 @@ def notes() -> None:
 @click.option("--content", "-c", default="", help="Note content")
 @click.option("--tags", "-g", multiple=True, help="Tags for the note")
 def create(title: str, content: str, tags: tuple[str, ...]) -> None:
-    """Create a new note."""
+    """Create a new note.
+
+    Args:
+        title: The title of the note (required)
+        content: The content of the note (optional, defaults to empty string)
+        tags: Tags to associate with the note (optional, can be multiple)
+
+    Raises:
+        click.Abort: If note creation fails
+    """
     try:
         resource_mgr = ResourceManager()
         note_mgr = NoteManager(resource_mgr)
@@ -240,7 +291,17 @@ def create(title: str, content: str, tags: tuple[str, ...]) -> None:
 def list_notes(
     tags: tuple[str, ...], search: str, output: Path | None, pretty: bool
 ) -> None:
-    """List all notes with optional filtering."""
+    """List all notes with optional filtering.
+
+    Args:
+        tags: Filter notes by specific tags (optional, can be multiple)
+        search: Search query to filter notes by title or content (optional)
+        output: Output file path for JSON export (optional)
+        pretty: Pretty print JSON output when exporting (optional)
+
+    Raises:
+        click.Abort: If listing notes fails
+    """
     try:
         resource_mgr = ResourceManager()
         note_mgr = NoteManager(resource_mgr)
@@ -289,7 +350,16 @@ def list_notes(
 )
 @click.option("--pretty", "-p", is_flag=True, help="Pretty print JSON output")
 def show(note_id: str, output: Path | None, pretty: bool) -> None:
-    """Show detailed information about a specific note."""
+    """Show detailed information about a specific note.
+
+    Args:
+        note_id: The unique identifier of the note to display
+        output: Output file path for JSON export (optional)
+        pretty: Pretty print JSON output when exporting (optional)
+
+    Raises:
+        click.Abort: If the note is not found or display fails
+    """
     try:
         resource_mgr = ResourceManager()
         note_mgr = NoteManager(resource_mgr)
@@ -330,7 +400,17 @@ def show(note_id: str, output: Path | None, pretty: bool) -> None:
 def edit(
     note_id: str, title: str | None, content: str | None, tags: tuple[str, ...]
 ) -> None:
-    """Edit an existing note."""
+    """Edit an existing note.
+
+    Args:
+        note_id: The unique identifier of the note to edit
+        title: New title for the note (optional)
+        content: New content for the note (optional)
+        tags: New tags for the note (optional, can be multiple)
+
+    Raises:
+        click.Abort: If the note is not found or editing fails
+    """
     try:
         resource_mgr = ResourceManager()
         note_mgr = NoteManager(resource_mgr)
@@ -360,7 +440,15 @@ def edit(
 @click.argument("note_id", type=str)
 @click.option("--force", "-f", is_flag=True, help="Force deletion without confirmation")
 def delete(note_id: str, force: bool) -> None:
-    """Delete a note."""
+    """Delete a note.
+
+    Args:
+        note_id: The unique identifier of the note to delete
+        force: Skip confirmation prompt and force deletion
+
+    Raises:
+        click.Abort: If the note is not found or deletion fails
+    """
     try:
         resource_mgr = ResourceManager()
         note_mgr = NoteManager(resource_mgr)
@@ -394,7 +482,16 @@ def delete(note_id: str, force: bool) -> None:
 )
 @click.option("--pretty", "-p", is_flag=True, help="Pretty print JSON output")
 def search(query: str, output: Path | None, pretty: bool) -> None:
-    """Search notes by content, title, or tags."""
+    """Search notes by content, title, or tags.
+
+    Args:
+        query: Search query to find in note titles, content, or tags
+        output: Output file path for JSON export (optional)
+        pretty: Pretty print JSON output when exporting (optional)
+
+    Raises:
+        click.Abort: If search operation fails
+    """
     try:
         resource_mgr = ResourceManager()
         note_mgr = NoteManager(resource_mgr)
@@ -430,7 +527,14 @@ def search(query: str, output: Path | None, pretty: bool) -> None:
 @notes.command()
 @click.argument("file_path", type=click.Path(path_type=Path))
 def export(file_path: Path) -> None:
-    """Export all notes to a JSON file."""
+    """Export all notes to a JSON file.
+
+    Args:
+        file_path: Path to the output JSON file
+
+    Raises:
+        click.Abort: If export operation fails
+    """
     try:
         resource_mgr = ResourceManager()
         note_mgr = NoteManager(resource_mgr)
@@ -446,7 +550,14 @@ def export(file_path: Path) -> None:
 @notes.command()
 @click.argument("file_path", type=click.Path(exists=True, path_type=Path))
 def import_notes(file_path: Path) -> None:
-    """Import notes from a JSON file."""
+    """Import notes from a JSON file.
+
+    Args:
+        file_path: Path to the input JSON file (must exist)
+
+    Raises:
+        click.Abort: If import operation fails
+    """
     try:
         resource_mgr = ResourceManager()
         note_mgr = NoteManager(resource_mgr)
@@ -461,13 +572,24 @@ def import_notes(file_path: Path) -> None:
 
 @cli.group()
 def tags() -> None:
-    """Tag management commands."""
+    """Tag management commands.
+
+    These commands provide tag management capabilities for organizing and
+    categorizing notes. Tags help in filtering and searching notes efficiently.
+    """
     pass
 
 
 @tags.command()
 def list_tags() -> None:
-    """List all tags used in notes."""
+    """List all tags used in notes.
+
+    This command displays all unique tags that are currently used across
+    all notes in the system, providing an overview of the tagging system.
+
+    Raises:
+        click.Abort: If listing tags fails
+    """
     try:
         resource_mgr = ResourceManager()
         note_mgr = NoteManager(resource_mgr)
@@ -490,7 +612,15 @@ def list_tags() -> None:
 @click.argument("note_id", type=str)
 @click.argument("tag", type=str)
 def add(note_id: str, tag: str) -> None:
-    """Add a tag to a note."""
+    """Add a tag to a note.
+
+    Args:
+        note_id: The unique identifier of the note
+        tag: The tag to add to the note
+
+    Raises:
+        click.Abort: If the note is not found or tag addition fails
+    """
     try:
         resource_mgr = ResourceManager()
         note_mgr = NoteManager(resource_mgr)
@@ -513,7 +643,15 @@ def add(note_id: str, tag: str) -> None:
 @click.argument("note_id", type=str)
 @click.argument("tag", type=str)
 def remove(note_id: str, tag: str) -> None:
-    """Remove a tag from a note."""
+    """Remove a tag from a note.
+
+    Args:
+        note_id: The unique identifier of the note
+        tag: The tag to remove from the note
+
+    Raises:
+        click.Abort: If the note is not found or tag removal fails
+    """
     try:
         resource_mgr = ResourceManager()
         note_mgr = NoteManager(resource_mgr)
@@ -546,7 +684,20 @@ def remove(note_id: str, tag: str) -> None:
     help="Path to SSL private key file for HTTPS",
 )
 def serve(host: str, port: int, cert: Path | None, key: Path | None) -> None:
-    """Start the Notepy Online web server."""
+    """Start the Notepy Online web server.
+
+    This command starts the web server with the specified configuration,
+    providing both the web interface and RESTful API for note management.
+
+    Args:
+        host: Server host address (default: "localhost")
+        port: Server port number (default: 8443)
+        cert: Path to SSL certificate file for HTTPS (optional)
+        key: Path to SSL private key file for HTTPS (optional)
+
+    Raises:
+        click.Abort: If server fails to start
+    """
     try:
         click.echo(f"🚀 Starting Notepy Online server on {host}:{port}")
 

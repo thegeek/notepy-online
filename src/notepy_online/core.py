@@ -157,7 +157,11 @@ class Note:
         """Add a tag to the note.
 
         Args:
-            tag: Tag to add
+            tag: Tag to add to the note
+
+        Note:
+            This method automatically updates the note's updated_at timestamp
+            when a tag is successfully added.
         """
         if tag not in self.tags:
             self.tags.append(tag)
@@ -167,20 +171,27 @@ class Note:
         """Remove a tag from the note.
 
         Args:
-            tag: Tag to remove
+            tag: Tag to remove from the note
+
+        Note:
+            This method automatically updates the note's updated_at timestamp
+            when a tag is successfully removed.
         """
         if tag in self.tags:
             self.tags.remove(tag)
             self.updated_at = datetime.now(timezone.utc)
 
     def search_in_content(self, query: str) -> bool:
-        """Search for text in note content and title.
+        """Search for text in note content, title, and tags.
+
+        This method performs a case-insensitive search across the note's
+        title, content, and tags to determine if the query matches.
 
         Args:
-            query: Search query
+            query: Search query to look for
 
         Returns:
-            True if query is found in title or content
+            True if query is found in title, content, or any tag
         """
         query_lower = query.lower()
         return (
@@ -191,7 +202,16 @@ class Note:
 
 
 class NoteManager:
-    """Manages note operations and storage."""
+    """Manages note operations and storage.
+
+    This class provides comprehensive note management functionality including
+    creation, retrieval, updating, deletion, and search operations. It handles
+    both metadata storage (JSON) and content storage (Markdown files) for
+    optimal performance and flexibility.
+
+    The NoteManager maintains an in-memory cache of notes for fast access
+    while persisting changes to disk for durability.
+    """
 
     def __init__(self, resource_manager: ResourceManager) -> None:
         """Initialize the note manager.
@@ -205,7 +225,12 @@ class NoteManager:
         self._load_notes()
 
     def _load_notes(self) -> None:
-        """Load notes from storage."""
+        """Load notes from storage.
+
+        This method loads all notes from the JSON metadata file and their
+        corresponding Markdown content files. It handles errors gracefully
+        and initializes an empty notes dictionary if loading fails.
+        """
         if self.notes_file.exists():
             try:
                 with open(self.notes_file, "r", encoding="utf-8") as f:
@@ -225,7 +250,11 @@ class NoteManager:
             note_id: Note identifier
 
         Returns:
-            Note content as string
+            Note content as string, empty string if file doesn't exist or read fails
+
+        Note:
+            This method handles file reading errors gracefully and returns
+            an empty string if the content file cannot be read.
         """
         content_file = self.resource_manager.notes_dir / f"{note_id}.md"
         if content_file.exists():
@@ -242,6 +271,9 @@ class NoteManager:
         Args:
             note_id: Note identifier
             content: Note content to save
+
+        Raises:
+            RuntimeError: If content cannot be saved to file
         """
         content_file = self.resource_manager.notes_dir / f"{note_id}.md"
         try:
@@ -251,7 +283,15 @@ class NoteManager:
             raise RuntimeError(f"Failed to save note content: {e}")
 
     def _save_notes(self) -> None:
-        """Save notes to storage."""
+        """Save notes to storage.
+
+        This method saves both the notes metadata (JSON) and individual
+        note content files (Markdown). It ensures data consistency by
+        saving all notes atomically.
+
+        Raises:
+            RuntimeError: If notes cannot be saved to storage
+        """
         try:
             data = {note_id: note.to_dict() for note_id, note in self.notes.items()}
             with open(self.notes_file, "w", encoding="utf-8") as f:
@@ -270,11 +310,15 @@ class NoteManager:
 
         Args:
             title: Note title
-            content: Note content (can be HTML from editor)
-            tags: List of tags
+            content: Note content (can be HTML from editor, will be converted to Markdown)
+            tags: List of tags for organization
 
         Returns:
             Created note instance
+
+        Note:
+            HTML content from the editor is automatically converted to Markdown
+            for storage. The note is immediately saved to disk after creation.
         """
         # Convert HTML content to Markdown for storage
         markdown_content = html_to_markdown(content)
@@ -291,6 +335,10 @@ class NoteManager:
 
         Returns:
             Note instance or None if not found
+
+        Note:
+            This method performs an in-memory lookup for fast access.
+            The note content is already loaded from disk during initialization.
         """
         return self.notes.get(note_id)
 
@@ -306,11 +354,15 @@ class NoteManager:
         Args:
             note_id: Note identifier
             title: New title (optional)
-            content: New content (optional)
+            content: New content (optional, HTML will be converted to Markdown)
             tags: New tags (optional)
 
         Returns:
             Updated note instance or None if not found
+
+        Note:
+            HTML content from the editor is automatically converted to Markdown
+            for storage. Changes are immediately persisted to disk.
         """
         note = self.notes.get(note_id)
         if note:
@@ -326,6 +378,10 @@ class NoteManager:
 
         Returns:
             True if note was deleted, False if not found
+
+        Note:
+            This method removes both the note from memory and its content
+            file from disk. Changes are immediately persisted.
         """
         if note_id in self.notes:
             del self.notes[note_id]
@@ -350,11 +406,15 @@ class NoteManager:
         """List notes with optional filtering.
 
         Args:
-            tags: Filter by tags (optional)
-            search_query: Search in title and content (optional)
+            tags: Filter by tags (optional) - notes must have at least one matching tag
+            search_query: Search in title, content, and tags (optional) - case-insensitive
 
         Returns:
-            List of matching notes
+            List of matching notes, sorted by updated_at (newest first)
+
+        Note:
+            When both tags and search_query are provided, notes must match both criteria.
+            Search is performed case-insensitively across title, content, and tags.
         """
         notes = list(self.notes.values())
 
@@ -374,7 +434,11 @@ class NoteManager:
         """Get all unique tags used in notes.
 
         Returns:
-            List of unique tags
+            List of unique tags, sorted alphabetically
+
+        Note:
+            This method collects all tags from all notes and returns
+            a deduplicated, alphabetically sorted list.
         """
         tags = set()
         for note in self.notes.values():
@@ -385,7 +449,11 @@ class NoteManager:
         """Get total number of notes.
 
         Returns:
-            Number of notes
+            Number of notes currently in the system
+
+        Note:
+            This method returns the count of notes loaded in memory,
+            which should match the number of notes on disk.
         """
         return len(self.notes)
 
@@ -394,6 +462,10 @@ class NoteManager:
 
         Args:
             file_path: Path to export file
+
+        Note:
+            The exported JSON includes both note metadata and content,
+            making it suitable for backup and migration purposes.
         """
         data = {}
         for note_id, note in self.notes.items():
@@ -412,6 +484,11 @@ class NoteManager:
 
         Returns:
             Number of notes imported
+
+        Note:
+            This method imports notes from a previously exported JSON file.
+            Imported notes are added to the existing collection and immediately
+            saved to disk. Duplicate note IDs will be overwritten.
         """
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)

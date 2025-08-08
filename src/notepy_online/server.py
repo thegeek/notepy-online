@@ -31,14 +31,30 @@ from .static_utils import (
 
 
 class NotepyOnlineServer:
-    """Web server for Notepy Online application."""
+    """Web server for Notepy Online application.
+
+    This class provides a comprehensive web server implementation using aiohttp,
+    offering both a modern web interface and a RESTful API for note management.
+
+    Features:
+    - RESTful API endpoints for all note operations
+    - Modern web interface with responsive design
+    - Static file serving for CSS, JavaScript, and other assets
+    - HTTPS support with SSL certificate handling
+    - JSON-based API responses
+    - Error handling and status codes
+    """
 
     def __init__(self, host: str = "localhost", port: int = 8443) -> None:
         """Initialize the server.
 
         Args:
-            host: Server host address
-            port: Server port number
+            host: Server host address (default: "localhost")
+            port: Server port number (default: 8443)
+
+        Note:
+            The server automatically initializes the resource manager and
+            note manager, and sets up all API and web interface routes.
         """
         self.host = host
         self.port = port
@@ -48,7 +64,14 @@ class NotepyOnlineServer:
         self._setup_routes()
 
     def _setup_routes(self) -> None:
-        """Set up application routes."""
+        """Set up application routes.
+
+        This method configures all the web routes including:
+        - RESTful API endpoints for note management
+        - Static file serving for assets
+        - Web interface pages
+        - Export/import functionality
+        """
         # API routes
         self.app.router.add_get("/api/notes", self.get_notes)
         self.app.router.add_post("/api/notes", self.create_note)
@@ -72,25 +95,48 @@ class NotepyOnlineServer:
         self.app.router.add_get("/status", self.status)
 
     async def index(self, request: Request) -> Response:
-        """Serve the main web interface."""
+        """Serve the main web interface.
+
+        Returns:
+            HTML response with the main note management interface
+        """
         html = self._get_index_html()
         return web.Response(text=html, content_type="text/html")
 
     def _get_index_html(self) -> str:
-        """Get the main HTML interface."""
+        """Get the main HTML interface.
+
+        Returns:
+            HTML content for the main note management interface
+        """
         return MAIN_PAGE
 
     async def status(self, request: Request) -> Response:
-        """Serve the status dashboard page."""
+        """Serve the status dashboard page.
+
+        Returns:
+            HTML response with the system status and statistics
+        """
         html = self._get_status_html()
         return web.Response(text=html, content_type="text/html")
 
     def _get_status_html(self) -> str:
-        """Get the status HTML interface."""
+        """Get the status HTML interface.
+
+        Returns:
+            HTML content for the system status dashboard
+        """
         return STATUS_PAGE
 
     async def get_notes(self, request: Request) -> Response:
-        """Get all notes with optional filtering."""
+        """Get all notes with optional filtering.
+
+        Query Parameters:
+            search: Optional search query to filter notes
+
+        Returns:
+            JSON response with list of notes or error message
+        """
         try:
             search_query = request.query.get("search")
             notes = self.note_mgr.list_notes(search_query=search_query)
@@ -100,7 +146,14 @@ class NotepyOnlineServer:
             return web.json_response({"error": str(e)}, status=500)
 
     async def create_note(self, request: Request) -> Response:
-        """Create a new note."""
+        """Create a new note.
+
+        Request Body:
+            JSON object with title, content, and tags fields
+
+        Returns:
+            JSON response with created note data or error message
+        """
         try:
             data = await request.json()
             title = data.get("title", "")
@@ -113,7 +166,14 @@ class NotepyOnlineServer:
             return web.json_response({"error": str(e)}, status=500)
 
     async def get_note(self, request: Request) -> Response:
-        """Get a specific note by ID."""
+        """Get a specific note by ID.
+
+        Path Parameters:
+            note_id: The unique identifier of the note
+
+        Returns:
+            JSON response with note data or 404 error if not found
+        """
         try:
             note_id = request.match_info["note_id"]
             note = self.note_mgr.get_note(note_id)
@@ -126,7 +186,17 @@ class NotepyOnlineServer:
             return web.json_response({"error": str(e)}, status=500)
 
     async def update_note(self, request: Request) -> Response:
-        """Update a note."""
+        """Update a note.
+
+        Path Parameters:
+            note_id: The unique identifier of the note
+
+        Request Body:
+            JSON object with optional title, content, and tags fields
+
+        Returns:
+            JSON response with updated note data or error message
+        """
         try:
             note_id = request.match_info["note_id"]
             data = await request.json()

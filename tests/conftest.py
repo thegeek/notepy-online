@@ -1,4 +1,17 @@
-"""Pytest configuration and fixtures for Notepy Online tests."""
+"""Pytest configuration and fixtures for Notepy Online tests.
+
+This module provides comprehensive test fixtures and configuration for
+the Notepy Online test suite. It includes fixtures for resource management,
+note management, server testing, and sample data generation.
+
+Features:
+- Temporary directory management for isolated testing
+- Resource manager fixtures with test-specific configurations
+- Note manager fixtures with sample data
+- Server and client fixtures for API testing
+- Sample data fixtures for consistent test scenarios
+- Async test support with proper event loop handling
+"""
 
 import asyncio
 import json
@@ -17,14 +30,34 @@ from notepy_online.server import NotepyOnlineServer
 
 @pytest.fixture
 def temp_dir() -> Generator[Path, None, None]:
-    """Create a temporary directory for testing."""
+    """Create a temporary directory for testing.
+
+    This fixture provides a temporary directory that is automatically
+    cleaned up after each test, ensuring test isolation.
+
+    Returns:
+        Path to the temporary directory
+
+    Yields:
+        Path: Temporary directory path
+    """
     with tempfile.TemporaryDirectory() as temp_dir:
         yield Path(temp_dir)
 
 
 @pytest.fixture
 def resource_manager(temp_dir: Path) -> ResourceManager:
-    """Create a resource manager with temporary directory."""
+    """Create a resource manager with temporary directory.
+
+    This fixture creates a ResourceManager instance configured to use
+    a temporary directory for all operations, ensuring test isolation.
+
+    Args:
+        temp_dir: Temporary directory fixture
+
+    Returns:
+        ResourceManager instance configured for testing
+    """
     # Create a ResourceManager and patch its resource directory
     rm = ResourceManager()
     rm.resource_dir = temp_dir
@@ -138,7 +171,6 @@ async def api_client(temp_dir: Path) -> AsyncGenerator[TestClient, None]:
     from notepy_online.core import NoteManager
 
     server.note_mgr = NoteManager(server.resource_mgr)
-
 
     test_server_instance = TestServer(server.app)
     async with TestClient(test_server_instance) as client:
