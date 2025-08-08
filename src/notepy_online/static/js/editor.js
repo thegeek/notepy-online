@@ -979,9 +979,10 @@ function selectNote(noteId, event) {
     // Show editor for selected note
     showEditor();
 
-    // Set editor content
+    // Set editor content - convert Markdown to HTML for Quill
     if (editor) {
-        editor.root.innerHTML = note.content;
+        const htmlContent = markdownToHtml(note.content);
+        editor.root.innerHTML = htmlContent;
     }
 
     // Show tag management section
@@ -1825,6 +1826,55 @@ function showEditor() {
 }
 
 
+
+// Convert Markdown to HTML for Quill editor
+function markdownToHtml(markdown) {
+    if (!markdown || markdown.trim() === '') return '';
+
+    // Split into lines to handle line breaks properly
+    const lines = markdown.split('\n');
+    const htmlLines = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
+        if (line === '') {
+            // Empty line - check if next line is also empty to avoid double breaks
+            if (i + 1 < lines.length && lines[i + 1].trim() === '') {
+                // Skip this empty line to avoid double paragraph breaks
+                continue;
+            } else {
+                // Single empty line - add a paragraph break
+                htmlLines.push('<p><br></p>');
+            }
+        } else {
+            // Process formatting on the line
+            let html = line;
+
+            // Headers
+            html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+            html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+            // Bold and italic
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            html = html.replace(/__(.*?)__/g, '<u>$1</u>');
+            html = html.replace(/~~(.*?)~~/g, '<s>$1</s>');
+
+            // Code
+            html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+
+            // Wrap in paragraph tags if not already a header
+            if (!html.startsWith('<h')) {
+                html = '<p>' + html + '</p>';
+            }
+
+            htmlLines.push(html);
+        }
+    }
+
+    return htmlLines.join('');
+}
 
 function escapeHtml(text) {
     const div = document.createElement('div');

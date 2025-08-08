@@ -44,9 +44,21 @@ def html_to_markdown(html_content: str) -> str:
     h.body_width = 0  # Don't wrap lines
     h.unicode_snob = True  # Use Unicode characters
     h.escape_snob = True  # Escape special characters
+    h.single_line_break = True  # Use single line breaks instead of double
+    h.ul_item_mark = "-"  # Use dash for unordered lists
 
     # Convert HTML to Markdown
     markdown = h.handle(html_content)
+
+    # Post-process to fix line spacing issues
+    import re
+
+    # Replace multiple consecutive empty lines with single empty lines
+    markdown = re.sub(r"\n{3,}", "\n\n", markdown)
+
+    # Handle consecutive <br> tags that might have been converted to multiple line breaks
+    # This happens when Quill creates multiple <br> tags for paragraph breaks
+    markdown = re.sub(r"\n\n\n+", "\n\n", markdown)
 
     # Clean up the output
     return markdown.strip()

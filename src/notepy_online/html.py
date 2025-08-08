@@ -823,7 +823,7 @@ MAIN_PAGE = """
         </div>
     </script>
 
-    <script src="/static/js/editor.js?v=1.5"></script>
+    <script src="/static/js/editor.js?v=2.0"></script>
 </body>
 </html>
 """
