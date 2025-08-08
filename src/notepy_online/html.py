@@ -27,25 +27,84 @@ COMMON_STYLES = '<link rel="stylesheet" href="/static/css/main.css">'
 
 EDITOR_STYLES = """
 <style>
-/* Add breathing room around containers */
+/* Make the layout flexible and responsive */
 .app-container {
     padding: 1rem;
     gap: 1rem;
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
 }
 
 .sidebar {
     margin: 0.5rem;
     border-radius: 12px;
+    flex: 0 0 350px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: flex-basis 0.3s ease;
+}
+
+.sidebar.collapsed {
+    flex: 0 0 0;
+    margin: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.sidebar-toggle {
+    position: fixed;
+    left: 1rem;
+    top: 1rem;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    display: none;
+}
+
+.sidebar-toggle:hover {
+    background: #2a2a2a;
+    border-color: #667eea;
+}
+
+
+
+.sidebar.collapsed .toggle-btn {
+    opacity: 1;
+    pointer-events: auto;
+    position: absolute;
+    right: -40px;
+    top: 1rem;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 0 8px 8px 0;
+    z-index: 1000;
 }
 
 .main-content {
     margin: 0.5rem;
     border-radius: 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .editor-container {
     margin: 0.5rem 0;
     border-radius: 8px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .ql-editor {
@@ -54,8 +113,9 @@ EDITOR_STYLES = """
     line-height: 1.3;
     color: #ffffff;
     background: #0a0a0a;
-    min-height: 400px;
+    flex: 1;
     padding: 2rem;
+    overflow-y: auto;
 }
 .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4, .ql-editor h5, .ql-editor h6 {
     color: #ffffff;
@@ -136,6 +196,10 @@ EDITOR_STYLES = """
     border: 1px solid #333;
     background: #0a0a0a;
     border-radius: 0 0 8px 8px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 /* Fix placeholder color */
@@ -175,6 +239,8 @@ EDITOR_STYLES = """
 /* Add breathing room to notes list */
 .notes-list {
     padding: 0.5rem;
+    flex: 1;
+    overflow-y: auto;
 }
 
 /* Add breathing room to sidebar header */
@@ -189,7 +255,7 @@ EDITOR_STYLES = """
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 400px;
+    flex: 1;
     text-align: center;
     color: #666;
     padding: 2rem;
@@ -710,11 +776,12 @@ MAIN_PAGE = f"""
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
-    <link rel="stylesheet" href="/static/css/editor.css?v=1.1">
+    <link rel="stylesheet" href="/static/css/editor.css?v=1.6">
     {EDITOR_STYLES}
 </head>
 <body>
     <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">☰</button>
 
     <div class="app-container">
         <div class="sidebar" id="sidebar">
@@ -1035,7 +1102,7 @@ MAIN_PAGE = f"""
         </div>
     </script>
 
-    <script src="/static/js/editor.js?v=2.9"></script>
+    <script src="/static/js/editor.js?v=3.0"></script>
 </body>
 </html>
 """

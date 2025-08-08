@@ -1183,7 +1183,15 @@ function updateLastSaved(timestamp = null) {
 // Toggle sidebar
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
     sidebar.classList.toggle('collapsed');
+
+    // Show/hide the separate toggle button
+    if (sidebar.classList.contains('collapsed')) {
+        sidebarToggle.style.display = 'block';
+    } else {
+        sidebarToggle.style.display = 'none';
+    }
 }
 
 // Enhanced save indicator
